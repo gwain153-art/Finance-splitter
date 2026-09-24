@@ -1,7 +1,7 @@
 import {
   state, save, compute, fmt, fmtShort, mkFormat, parseNum, esc, uid, round2, clamp,
   SHADES, FREQ, bucketTotal, nextPayday, exportJSON, replaceState, resetState,
-  pending, pendingLeft, setPartDone, nextSerialN
+  pending, pendingLeft, setPartDone, nextSerialN, resetProgress, justReset
 } from './state.js';
 
 /* ---------- optional modules: the app still runs if one of them fails ---------- */
@@ -1019,6 +1019,7 @@ function openSettings() {
   $('#setPayday').value = state.nextPayday || '';
   $('#installHint').hidden = !(pwa.isIOS() && !pwa.isStandalone());
   const r = $('#resetBtn'); r.classList.remove('armed'); r.textContent = 'Reset everything';
+  const rr = $('#resetRankBtn'); rr.classList.remove('armed'); rr.textContent = 'Reset rank';
   showSheet($('#settings'));
 }
 $('#settingsBtn').addEventListener('click', openSettings);
@@ -1060,6 +1061,20 @@ $('#importFile').addEventListener('change', async e => {
     Sound.play('sweep'); Haptics.success(); toast('Backup restored'); closeSheet();
   } catch (err) { Sound.play('error'); Haptics.error(); toast("That file isn't a Crimson Cut backup"); }
   e.target.value = '';
+});
+let rankArm;
+$('#resetRankBtn').addEventListener('click', e => {
+  const b = e.currentTarget;
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again. Back to Skint.'; Sound.play('error'); Haptics.medium();
+    clearTimeout(rankArm); rankArm = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Reset rank'; }, 3500);
+    return;
+  }
+  clearTimeout(rankArm); b.classList.remove('armed'); b.textContent = 'Reset rank';
+  resetProgress(); lastLevel = 1;
+  renderHeader(); renderRanks(); renderVault();
+  Sound.play('delete'); Haptics.heavy(); toast('Rank and achievements reset. History kept.');
+  setTimeout(() => processProgress(), 900);
 });
 let resetArm;
 $('#resetBtn').addEventListener('click', e => {
@@ -1131,7 +1146,8 @@ function openVaultDoor() {
 
 applySettings();
 renderAll();
-processProgress({ quiet: true });
+// After a rank reset, let the achievements you still qualify for pop again instead of unlocking silently.
+if (justReset) setTimeout(() => processProgress(), 1700); else processProgress({ quiet: true });
 note.classList.add('idle');
 document.body.dataset.tab = 'split';
 

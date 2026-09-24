@@ -72,7 +72,9 @@ function splitStats(entry) {
 //   <= 1.5x period -> 'ontime' (streak +1)
 //   otherwise      -> 'late' (streak resets to 0)
 function walk(state) {
-  const hist = Array.isArray(state && state.history) ? state.history.slice() : [];
+  // progressFrom: XP and achievements only count splits made after the last rank reset.
+  const from = num(state && state.progressFrom);
+  const hist = (Array.isArray(state && state.history) ? state.history : []).filter((e) => num(e.t) >= from);
   hist.sort((a, b) => num(a.t) - num(b.t));
   const out = [];
   let run = 0, best = 0, prevT = null;

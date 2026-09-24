@@ -21,6 +21,8 @@ export function defaults() {
     touched: false,
     settings: { sound: true, haptics: true, motion: false },
     unlocked: {},
+    progressFrom: 0,
+    resets: 1,
     history: [],
     buckets: [
       { id: uid(), name: 'Rent & bills', mode: 'fixed', value: 950, color: '#DC143C', goal: null, auto: true },
@@ -41,6 +43,9 @@ function normalise(s) {
   if (typeof s.sound === 'boolean') out.settings.sound = s.sound;
   delete out.sound;
   out.unlocked = s.unlocked && typeof s.unlocked === 'object' ? s.unlocked : {};
+  out.progressFrom = +s.progressFrom || 0;
+  // One-off: v3 restarts everyone's rank and achievements (history is kept).
+  if (!(+s.resets >= 1)) { out.unlocked = {}; out.progressFrom = Date.now(); out.resets = 1; justReset = true; }
   out.buckets = (Array.isArray(s.buckets) ? s.buckets : d.buckets).map(b => ({
     id: b.id || uid(), name: String(b.name ?? 'Bucket'), mode: b.mode === 'fixed' ? 'fixed' : 'pct',
     value: Math.max(0, +b.value || 0), color: b.color || SHADES[0], goal: b.goal > 0 ? +b.goal : null, auto: !!b.auto
@@ -67,6 +72,8 @@ function normalise(s) {
   return out;
 }
 
+export let justReset = false;
+
 export function load() {
   try {
     const raw = localStorage.getItem(KEY) || localStorage.getItem(V1_KEY);
@@ -76,6 +83,7 @@ export function load() {
 }
 
 export const state = load();
+if (justReset) try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
 
 let saveT;
 export function save() {
@@ -93,6 +101,8 @@ export function replaceState(next) {
 export function resetState() { replaceState(defaults()); }
 
 export function exportJSON() { return JSON.stringify(state, null, 2); }
+
+export function resetProgress() { state.unlocked = {}; state.progressFrom = Date.now(); save(); }
 
 /* ---------- money ---------- */
 export function amountOf(b, pay) {
