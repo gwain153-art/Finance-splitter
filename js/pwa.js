@@ -1,4 +1,4 @@
-// Crimson Cut: installable-web-app helpers.
+// Clean Cut: installable-web-app helpers.
 
 /**
  * Registers ./sw.js (relative to the page) when supported. Skips file:// and claude.ai hosts.

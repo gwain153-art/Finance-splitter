@@ -1,4 +1,4 @@
-// Crimson Cut - vault door.
+// Clean Cut - vault door.
 //
 // A heavy round safe door that covers an element (the Vault hero) and opens:
 // dial spins L/R/L, the spoked wheel ratchets round, the bolts slam back,
@@ -162,9 +162,9 @@ function faceSvg(id) {
     <circle r="31.1" fill="none" stroke="rgba(255,170,185,.45)" stroke-width=".12"/>
     <!-- engraved, crimson-filled lettering -->
     <g class="vd-engrave">
-      <text transform="translate(0 .26)" fill="rgba(255,240,244,.2)"><textPath href="#${id}arcT" startOffset="50%" text-anchor="middle">CRIMSON &#x2022; CUT</textPath></text>
-      <text transform="translate(0 -.16)" fill="#050304"><textPath href="#${id}arcT" startOffset="50%" text-anchor="middle">CRIMSON &#x2022; CUT</textPath></text>
-      <text fill="url(#${id}enamel)"><textPath href="#${id}arcT" startOffset="50%" text-anchor="middle">CRIMSON &#x2022; CUT</textPath></text>
+      <text transform="translate(0 .26)" fill="rgba(255,240,244,.2)"><textPath href="#${id}arcT" startOffset="50%" text-anchor="middle">CLEAN &#x2022; CUT</textPath></text>
+      <text transform="translate(0 -.16)" fill="#050304"><textPath href="#${id}arcT" startOffset="50%" text-anchor="middle">CLEAN &#x2022; CUT</textPath></text>
+      <text fill="url(#${id}enamel)"><textPath href="#${id}arcT" startOffset="50%" text-anchor="middle">CLEAN &#x2022; CUT</textPath></text>
     </g>
     <g class="vd-engrave-sm">
       <text x="27.2" y="5.2" text-anchor="middle" fill="rgba(255,240,244,.14)" transform="translate(0 .15)">SEAL</text>
@@ -249,7 +249,7 @@ function build(id) {
     <div class="vd-wall">
       <div class="vd-boxes vd-boxes-l"></div><div class="vd-boxes vd-boxes-r"></div>
       <div class="vd-side vd-side-l"><div class="vd-gauge"><div class="vd-gauge-face">${gaugeSvg(id)}<i class="vd-needle"></i><b></b></div></div></div>
-      <div class="vd-side vd-side-r"><div class="vd-name"><span class="vd-name-t">Crimson <em>Cut</em></span><span class="vd-name-s">Reserve vault &middot; N&ordm; 0451</span><i></i><i></i><i></i><i></i></div></div>
+      <div class="vd-side vd-side-r"><div class="vd-name"><span class="vd-name-t">Clean <em>Cut</em></span><span class="vd-name-s">Reserve vault &middot; N&ordm; 0451</span><i></i><i></i><i></i><i></i></div></div>
     </div>
     <div class="vd-c vd-mid">
       <div class="vd-ring"><div class="vd-chshade"></div>${ringSvg(id)}</div>

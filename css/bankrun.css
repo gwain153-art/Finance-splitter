@@ -1,4 +1,4 @@
-/* Crimson Cut: Transfer Run overlay (js/bankrun.js).
+/* Clean Cut: Transfer Run overlay (js/bankrun.js).
    Everything is scoped under .br so it can't leak into the app. */
 
 .br{

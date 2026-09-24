@@ -53,10 +53,20 @@ button{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-se
 /* ---------- boot ---------- */
 .boot{position:fixed;inset:0;z-index:100;background:var(--black);display:grid;place-content:center;justify-items:center;gap:18px;transition:opacity .5s ease,visibility .5s}
 .boot.gone{opacity:0;visibility:hidden}
-.boot-logo{width:96px;height:96px;overflow:visible;filter:drop-shadow(0 0 24px rgba(var(--a1),.7))}
-.boot-logo .ring{stroke-dasharray:120;stroke-dashoffset:120;animation:draw .7s var(--ease-out) forwards}
-.boot-logo .core{transform-origin:24px 24px;transform:scale(0);animation:corePop .45s var(--spring) .35s forwards}
-.boot-logo .cut,.boot-logo .edge{stroke-dasharray:57;stroke-dashoffset:57;animation:draw .18s ease-in .75s forwards}
+.boot-logo{width:104px;height:104px;overflow:visible;filter:drop-shadow(0 0 26px rgba(255,255,255,.12))}
+.mark .half-a,.mark .half-b{transform:translate(-1.7px,-1.7px)}
+.mark .half-b{transform:translate(1.7px,1.7px)}
+.mark .blade{opacity:.8;stroke-dasharray:60;stroke-dashoffset:0}
+/* boot: arcs deal in, the core lands, the blade flashes through, the halves slide apart */
+.boot-logo .arc{stroke-dasharray:0 120;animation:arcIn .55s var(--ease-out) forwards;animation-delay:calc(var(--i) * 70ms)}
+@keyframes arcIn{to{stroke-dasharray:23.85 95.53}}
+.boot-logo .core{transform-origin:24px 24px;transform:scale(0);animation:corePop .45s var(--spring) .3s forwards}
+.boot-logo .half-a,.boot-logo .half-b{transform:none;animation:halfA .45s var(--spring) .82s forwards}
+.boot-logo .half-b{animation-name:halfB}
+@keyframes halfA{to{transform:translate(-1.7px,-1.7px)}}
+@keyframes halfB{to{transform:translate(1.7px,1.7px)}}
+.boot-logo .blade{stroke-dashoffset:60;opacity:1;animation:draw .16s ease-in .72s forwards,bladeFade .5s ease-out .9s forwards}
+@keyframes bladeFade{to{opacity:.8}}
 @keyframes draw{to{stroke-dashoffset:0}}
 @keyframes corePop{to{transform:scale(1)}}
 .boot-word{display:flex;gap:.12em;font-family:var(--display);font-weight:900;font-size:44px;letter-spacing:.04em;text-transform:uppercase;line-height:1}
@@ -71,7 +81,7 @@ button{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-se
 .app{position:relative;z-index:1;min-height:100dvh}
 .hdr{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;padding:calc(var(--sat) + 10px) 16px 10px;background:linear-gradient(180deg,rgba(9,9,12,.92),rgba(9,9,12,.55) 70%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .hdr-brand{display:flex;align-items:center;gap:8px;margin-right:auto;min-width:0}
-.hdr-brand svg{width:30px;height:30px;flex:none;filter:drop-shadow(0 0 10px rgba(var(--a1),.6))}
+.hdr-brand svg{width:32px;height:32px;flex:none;overflow:visible;filter:drop-shadow(0 0 8px rgba(255,255,255,.1))}
 .hdr-word{font-family:var(--display);font-weight:900;font-size:22px;text-transform:uppercase;letter-spacing:.03em;line-height:1}
 .hdr-word b{color:var(--crimson);font-weight:900}
 @media (max-width:430px){.hdr-word{display:none}}
@@ -573,3 +583,6 @@ body,.note,.btn-primary,.chip,.cut-track,.tabbar,.pending-strip{transition-prope
 .note-pick [data-note="20"]{--nc:#8E4FD0}.note-pick [data-note="10"]{--nc:#DB7326}.note-pick [data-note="5"]{--nc:#1F9C95}
 .note-pick button[aria-pressed="true"]{border-color:#fff;transform:translateY(-2px) scale(1.06);box-shadow:0 6px 18px -4px var(--nc)}
 .note-pick button:active{transform:scale(.92)}
+/* brand wordmark: "Cut" wears all four notes, whatever theme is picked */
+.hdr-word b,.boot-word span:last-child{background:linear-gradient(90deg,#FF4B62,#B98AF5 40%,#FFA257 70%,#4FD6CE);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.boot-word span:last-child{filter:drop-shadow(0 0 18px rgba(185,138,245,.35))}

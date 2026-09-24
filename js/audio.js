@@ -1,4 +1,4 @@
-// Crimson Cut - synthesized sound engine.
+// Clean Cut - synthesized sound engine.
 //
 // Everything is generated in code and pre-rendered to AudioBuffers with an
 // OfflineAudioContext, so playback is a single BufferSource per sound.

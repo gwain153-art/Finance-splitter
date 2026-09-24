@@ -1,4 +1,4 @@
-# Crimson Cut
+# Clean Cut
 
 An over-the-top paycheck splitter built to live on your iPhone home screen.
 

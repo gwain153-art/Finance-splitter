@@ -1,4 +1,4 @@
-// Crimson Cut — fx.js
+// Clean Cut — fx.js
 // One full-screen 2D canvas overlay: particles, blade trail, flashes, shockwaves
 // and the banknote-splitting cutscene. No sound, no deps.
 
@@ -188,7 +188,7 @@ function renderNoteFront(w, h, dpr, note) {
   rrect(g, 4.5, 4.5, w - 9, h - 9, rad - 3); g.stroke();
   g.strokeStyle = 'rgba(244,236,238,0.22)'; g.lineWidth = 0.6;
   rrect(g, 11.5, 11.5, w - 23, h - 23, rad - 6); g.stroke();
-  const micro = 'CRIMSON CUT • ';
+  const micro = 'CLEAN CUT • ';
   g.font = `600 4.6px ${MONO}`;
   g.fillStyle = rgba(C.soft, 0.75);
   g.textAlign = 'left'; g.textBaseline = 'middle';
@@ -276,7 +276,7 @@ function renderNoteBack(w, h, dpr) {
   g.font = `900 ${Math.round(h * 0.22)}px ${DISPLAY}`;
   g.textAlign = 'center'; g.textBaseline = 'middle';
   setSpacing(g, 3);
-  g.fillText('CRIMSON CUT', w / 2, h / 2);
+  g.fillText('CLEAN CUT', w / 2, h / 2);
   setSpacing(g, 0);
   g.strokeStyle = rgba(C.hi, 0.5); g.lineWidth = 1;
   rrect(g, 4.5, 4.5, w - 9, h - 9, rad - 3); g.stroke();
