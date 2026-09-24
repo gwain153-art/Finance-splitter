@@ -4,7 +4,8 @@ An over-the-top paycheck splitter built to live on your iPhone home screen.
 
 Put in what landed, carve it into buckets (percent of pay or fixed amounts), then swipe the blade to cut the banknote into pieces that fly into each bucket.
 
-- Live WebGL crimson smoke background that reacts to touch, tilt and splits
+- Built on the £50 and £20: Clean Cut's own banknotes (not replicas, marked not legal tender) for the paycheck, the cutscene and fanned cash stacks on every bucket; dark UI in £50 red and £20 purple only
+- Live WebGL smoke background that reacts to touch, tilt and splits
 - Banknote cutscene: katana slashes, flying strips, confetti, screen shake
 - Synthesised sound design that plays through the iPhone silent switch
 - Real iPhone haptics (iOS 18+ switch trick, vibrate on Android)
