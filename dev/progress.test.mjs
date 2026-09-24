@@ -37,7 +37,7 @@ test('levels ladder is sane', () => {
   assert.ok(LEVELS.length >= 14 && LEVELS.length <= 17);
   assert.equal(LEVELS[0].xp, 0);
   assert.equal(LEVELS[0].name, 'Skint');
-  assert.equal(LEVELS.at(-1).name, 'Crimson Emperor');
+  assert.equal(LEVELS.at(-1).name, 'Sterling Emperor');
   for (let i = 1; i < LEVELS.length; i++) {
     assert.ok(LEVELS[i].xp > LEVELS[i - 1].xp);
     assert.equal(LEVELS[i].level, i + 1);

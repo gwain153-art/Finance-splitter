@@ -1096,11 +1096,11 @@ $('#setCur').addEventListener('change', e => {
 });
 $('#setPayday').addEventListener('change', e => { state.nextPayday = e.target.value || null; save(); renderHeader(); Sound.play('tap'); });
 $('#exportBtn').addEventListener('click', async () => {
-  const name = `crimson-cut-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const name = `clean-cut-backup-${new Date().toISOString().slice(0, 10)}.json`;
   const blob = new Blob([exportJSON()], { type: 'application/json' });
   try {
     const file = new File([blob], name, { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Crimson Cut backup' }); toast('Backup exported'); return; }
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Clean Cut backup' }); toast('Backup exported'); return; }
   } catch (e) { if (e && e.name === 'AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
@@ -1114,7 +1114,7 @@ $('#importFile').addEventListener('change', async e => {
     replaceState(data); mkFormat(); seen.clear(); applySettings(); renderAll();
     lastLevel = progress ? progress.evaluate(state).level : 1;
     Sound.play('sweep'); Haptics.success(); toast('Backup restored'); closeSheet();
-  } catch (err) { Sound.play('error'); Haptics.error(); toast("That file isn't a Crimson Cut backup"); }
+  } catch (err) { Sound.play('error'); Haptics.error(); toast("That file isn't a Clean Cut backup"); }
   e.target.value = '';
 });
 let rankArm;

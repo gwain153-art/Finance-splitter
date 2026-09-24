@@ -1,31 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="-120 -120 240 240">
-  <title>Crimson Cut</title>
-  <defs>
-    <linearGradient id="lg" x1="-90" y1="90" x2="90" y2="-90" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#B00F30"/>
-      <stop offset="0.55" stop-color="#DC143C"/>
-      <stop offset="1" stop-color="#FF3A5C"/>
-    </linearGradient>
-    <radialGradient id="ld" cx="-12" cy="-16" r="70" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FF3A5C"/>
-      <stop offset="0.6" stop-color="#DC143C"/>
-      <stop offset="1" stop-color="#A80E2E"/>
-    </radialGradient>
-    <mask id="lm" maskUnits="userSpaceOnUse" x="-120" y="-120" width="240" height="240">
-      <rect x="-120" y="-120" width="240" height="240" fill="#fff"/>
-      <rect x="-130" y="-6.5" width="260" height="13" fill="#000" transform="rotate(-45)"/>
-    </mask>
-    <filter id="lf" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="14"/>
-    </filter></defs>
-  <g filter="url(#lf)" opacity="0.75" mask="url(#lm)">
-      <circle r="83" fill="none" stroke="#DC143C" stroke-width="22"/>
-      <circle r="46" fill="#DC143C"/>
-    </g>
-    <g mask="url(#lm)">
-      <circle r="83" fill="none" stroke="url(#lg)" stroke-width="18"/>
-      <circle r="46" fill="url(#ld)"/>
-      <circle r="74" fill="none" stroke="#FF3A5C" stroke-opacity="0.35" stroke-width="1"/>
-    </g>
-    <rect x="-92" y="-0.8" width="184" height="1.6" rx="0.8" fill="#F4ECEE" opacity="0.7" transform="rotate(-45)"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Clean Cut</title><defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="70%"><stop offset="0" stop-color="#1D1A24"/><stop offset=".6" stop-color="#0F0E13"/><stop offset="1" stop-color="#07070A"/></radialGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="30.72"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g filter="url(#blur)" opacity=".55">
+    <circle cx="194.56" cy="204.8" r="81.92" fill="#D0263F"/>
+    <circle cx="317.44" cy="204.8" r="81.92" fill="#8E4FD0"/>
+    <circle cx="194.56" cy="317.44" r="81.92" fill="#1F9C95"/>
+    <circle cx="317.44" cy="317.44" r="81.92" fill="#DB7326"/>
+  </g>
+  <svg x="87.03999999999999" y="87.03999999999999" width="337.92" height="337.92" viewBox="0 0 48 48"><defs>
+    <radialGradient id="svt" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#D9D5DF"/><stop offset="1" stop-color="#7E7788"/></radialGradient>
+    <clipPath id="cat"><polygon points="-10,-10 58,-10 -10,58"/></clipPath>
+    <clipPath id="cbt"><polygon points="58,-10 58,58 -10,58"/></clipPath>
+    <linearGradient id="blt" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  </defs>
+  <g transform="translate(-1.7 -1.7)"><g clip-path="url(#cat)"><g transform="rotate(-125.95 24 24)"><circle cx="24" cy="24" r="19" fill="none" stroke="#D0263F" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="0.00"/><circle cx="24" cy="24" r="19" fill="none" stroke="#8E4FD0" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-29.85"/><circle cx="24" cy="24" r="19" fill="none" stroke="#DB7326" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-59.69"/><circle cx="24" cy="24" r="19" fill="none" stroke="#1F9C95" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-89.54"/></g><circle cx="24" cy="24" r="10.5" fill="url(#svt)"/></g></g>
+  <g transform="translate(1.7 1.7)"><g clip-path="url(#cbt)"><g transform="rotate(-125.95 24 24)"><circle cx="24" cy="24" r="19" fill="none" stroke="#D0263F" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="0.00"/><circle cx="24" cy="24" r="19" fill="none" stroke="#8E4FD0" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-29.85"/><circle cx="24" cy="24" r="19" fill="none" stroke="#DB7326" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-59.69"/><circle cx="24" cy="24" r="19" fill="none" stroke="#1F9C95" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-89.54"/></g><circle cx="24" cy="24" r="10.5" fill="url(#svt)"/></g></g>
+  <path d="M3 45 L45 3" stroke="url(#blt)" stroke-width=".9" stroke-linecap="round"/></svg>
 </svg>

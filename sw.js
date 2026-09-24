@@ -1,6 +1,6 @@
-/* Crimson Cut service worker. All paths are relative to this file's scope,
+/* Clean Cut service worker. All paths are relative to this file's scope,
    so it works at a domain root (Netlify) or under a sub-path (GitHub Pages). */
-const VERSION = 'cc-v3.2-2026-09-24';
+const VERSION = 'cc-v4-2026-09-24';
 const PREFIX = 'cc-';
 
 const SHELL = [

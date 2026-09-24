@@ -1,4 +1,4 @@
-// Crimson Cut: the Transfer Run.
+// Clean Cut: the Transfer Run.
 // The app can't move real money. After a cut you move each amount yourself in your bank
 // app, then stamp the matching slip BANKED here. Until every slip is stamped the split
 // stays pending. Self-contained: builds its own overlay and injects css/bankrun.css.
@@ -266,7 +266,7 @@ function createRun(o) {
               <div class="slip-r1"><span class="slip-kind">Transfer slip</span><span class="slip-no">No. ${esc(no)}</span></div>
               <div class="slip-payee"><small>Pay to</small><b>${esc(p.name)}</b></div>
               <div class="slip-amt" aria-hidden="true">${m.pre ? `<span class="sym">${esc(m.pre)}</span>` : ''}<span class="int">${esc(m.int)}</span>${m.dec ? `<span class="dec">${esc(m.dec)}</span>` : ''}${m.post ? `<span class="sym post">${esc(m.post)}</span>` : ''}</div>
-              <div class="slip-words" aria-hidden="true">${esc(amountWords(p.amt, m.pre || m.post) || 'Crimson Cut transfer slip')}</div>
+              <div class="slip-words" aria-hidden="true">${esc(amountWords(p.amt, m.pre || m.post) || 'Clean Cut transfer slip')}</div>
               <div class="slip-acts">
                 <button type="button" class="slip-copy" data-act="copy" aria-label="Copy ${esc(plain)}, the amount for ${esc(p.name)}">${IC.copy}${IC.tick}<span>Copy amount</span></button>
                 <button type="button" class="slip-go" data-act="stamp" aria-label="Stamp ${esc(p.name)} as banked">${IC.stamp}<span>Stamp it</span></button>

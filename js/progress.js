@@ -1,4 +1,4 @@
-// Crimson Cut: gamification logic. Pure functions, no DOM, no deps.
+// Clean Cut: gamification logic. Pure functions, no DOM, no deps.
 // Everything here is derived from app state, so it can be recomputed at any time.
 
 const DAY = 86400000;
@@ -33,9 +33,9 @@ export const LEVELS = [
   { level: 11, name: 'Compound Interest Hooligan', xp: 9500 },
   { level: 12, name: 'Tax-Efficient Warlord', xp: 12500 },
   { level: 13, name: "Bank Manager's Nightmare", xp: 16000 },
-  { level: 14, name: 'Crimson Baron', xp: 20000 },
+  { level: 14, name: 'Sterling Baron', xp: 20000 },
   { level: 15, name: 'Grand Vizier of Wedge', xp: 25000 },
-  { level: 16, name: 'Crimson Emperor', xp: 32000 },
+  { level: 16, name: 'Sterling Emperor', xp: 32000 },
 ];
 
 export function isSavings(name) {

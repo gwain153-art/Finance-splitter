@@ -1,4 +1,4 @@
-// Crimson Cut - haptics.
+// Clean Cut - haptics.
 //
 // Android / Chromium: navigator.vibrate.
 // iOS (Safari has no Vibration API): toggling an <input type="checkbox" switch>

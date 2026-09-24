@@ -1,4 +1,4 @@
-// Crimson Cut: living WebGL background.
+// Clean Cut: living WebGL background.
 // Domain-warped fbm "ink in water" in near-black, with restrained crimson veins,
 // film grain, vignette and up to 4 shockwave ripples. WebGL1, no dependencies.
 

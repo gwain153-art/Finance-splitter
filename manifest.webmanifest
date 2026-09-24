@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Crimson Cut",
-  "short_name": "Crimson Cut",
+  "name": "Clean Cut",
+  "short_name": "Clean Cut",
   "description": "Split every paycheck into bills, savings and spending in one animated cut.",
   "start_url": "./",
   "scope": "./",
