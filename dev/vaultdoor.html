@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0708">
+<meta name="color-scheme" content="dark">
+<title>Vault Door Lab</title>
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/app.css">
+<style>
+  .lab{padding:calc(var(--sat) + 16px) 16px 40px;max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
+  .lab h1{margin:0;font-family:var(--display);font-weight:900;font-size:26px;text-transform:uppercase;letter-spacing:.04em}
+  .lab h1 b{color:var(--crimson)}
+  .ctl{display:flex;flex-wrap:wrap;gap:8px}
+  .ctl button{height:42px;padding:0 14px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel-2);font-weight:600}
+  .ctl button.pri{background:var(--crimson);border-color:var(--crimson-hi)}
+  .ctl button:active{transform:scale(.95)}
+  .ctl label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+  #log{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:pre-wrap;min-height:3em}
+  .filler{color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="bg-fallback" aria-hidden="true"></div>
+<div class="lab">
+  <h1>Vault <b>door</b> lab</h1>
+
+  <div class="vault-hero glass" id="hero">
+    <span class="eyebrow">All-time paid in</span>
+    <strong class="odo odo-big" id="vPaid">&pound;48,210</strong>
+    <div class="vault-stats">
+      <div><span class="eyebrow">Saved</span><b class="odo" id="vSaved">&pound;12.4k</b></div>
+      <div><span class="eyebrow">Splits</span><b class="odo" id="vSplits">37</b></div>
+      <div><span class="eyebrow">Streak</span><b class="odo" id="vStreak">9</b></div>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <button class="pri" id="bOpen">Open</button>
+    <button id="bClose">Close</button>
+    <button id="bFast">Open fast</button>
+    <button id="bCycle">Close + open (app flow)</button>
+    <label><input type="checkbox" id="cRM"> reduced motion</label>
+    <label><input type="checkbox" id="cSnd" checked> sound</label>
+  </div>
+  <div id="log">tap anywhere once to unlock audio</div>
+
+  <div class="glass pad filler">
+    Tapping the door while it is sealed opens it; tapping during the sequence skips to the end.
+    The first open in a session runs the full ~2.2s sequence, later ones the ~0.8s version.
+  </div>
+</div>
+
+<script type="module">
+import { Sound } from '../js/audio.js';
+import { Haptics } from '../js/haptics.js';
+import { createVaultDoor } from '../js/vaultdoor.js';
+
+Sound.install();
+Haptics.install();
+
+const log = document.getElementById('log');
+const say = (m) => { log.textContent = m; };
+const host = document.getElementById('hero');
+let rm = false;
+let door = createVaultDoor(host, { Sound, Haptics, reduceMotion: () => rm });
+window.door = door;
+
+async function run(label, fn) {
+  const t0 = performance.now();
+  say(label + '...');
+  const ok = await fn();
+  say(`${label}: resolved ${ok} after ${Math.round(performance.now() - t0)}ms (state ${door.state})`);
+  window.__last = { label, ok, ms: performance.now() - t0 };
+}
+
+document.getElementById('bOpen').onclick = () => run('open', () => door.open());
+document.getElementById('bFast').onclick = () => run('open fast', () => door.open({ fast: true }));
+document.getElementById('bClose').onclick = () => { door.close(); say('closed (sealed)'); };
+document.getElementById('bCycle').onclick = () => { door.close(); run('close+open', () => door.open()); };
+document.getElementById('cRM').onchange = (e) => { rm = e.target.checked; };
+document.getElementById('cSnd').onchange = (e) => { Sound.enabled = e.target.checked; };
+</script>
+</body>
+</html>

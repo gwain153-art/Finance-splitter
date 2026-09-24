@@ -9,8 +9,9 @@ Put in what landed, carve it into buckets (percent of pay or fixed amounts), the
 - Synthesised sound design that plays through the iPhone silent switch
 - Real iPhone haptics (iOS 18+ switch trick, vibrate on Android)
 - Custom keypad, rolling odometer numbers, liquid-fill buckets, goals per bucket
-- The Vault: all-time totals, stacked chart, history with undo
-- Ranks: 16 levels, XP, 33 achievements (some hidden)
+- Transfer Run: after a cut, stamp a slip per bucket as you move the money in your bank app (copy-amount buttons, swipe-to-stamp, auto buckets pre-stamped); splits stay pending until banked
+- The Vault: a safe door that cracks open, all-time totals, stacked chart, history with undo
+- Ranks: 16 levels, XP (bonus for banking fast), 38 achievements (some hidden); Settings > Reset rank
 - Installable PWA: works offline, launch screens, home-screen icon
 - Backup export/import (data lives on your device)
 

@@ -207,22 +207,21 @@ function createRun(o) {
           <div class="br-top"><span class="br-eye"><i></i>Transfer run</span><span class="br-serial">${esc(serial)}${day ? ' · ' + esc(day) : ''}</span></div>
           <h1 class="br-title">Move the <em>money.</em></h1>
         </header>
-        <section class="br-dock" aria-label="Progress">
+        <div class="br-dockwrap"><section class="br-dock" aria-label="Progress">
           <div class="br-read"><span class="br-odo" aria-hidden="true"></span><span class="br-pct" aria-hidden="true"><b>0</b><small>%</small></span></div>
           <div class="br-of"><span class="br-ofl">of <b>${esc(fmt(total))}</b> banked</span><span class="br-left"></span></div>
           <div class="br-bar" aria-hidden="true">${segs}</div>
-        </section>
+        </section></div>
         <p class="br-tip">${IC.phone}<span>Open your bank app, move each amount, then <b>swipe the slip right</b> to stamp it.</span></p>
         <div class="br-list"></div>
       </div>
       <footer class="br-foot">
         <button type="button" class="br-scrap">Scrap this split</button>
-        <button type="button" class="br-later">Later</button>
+        <button type="button" class="br-later">Later<small>Split stays pending</small></button>
       </footer>
     </div>
     <div class="br-pile" aria-hidden="true"></div>
     <div class="br-fin" hidden>
-      <div class="fin-glow" aria-hidden="true"></div>
       <div class="fin-stamp" aria-hidden="true"><div class="fin-ink"><span>Banked.</span></div></div>
       <div class="fin-copy">
         <span class="br-eye"><i></i>${esc(serial)} · run complete</span>
@@ -234,7 +233,7 @@ function createRun(o) {
     </div>
     <div class="br-sr" aria-live="polite"></div>`;
   const $ = s => root.querySelector(s);
-  const list = $('.br-list'), dock = $('.br-dock'), scroller = $('.br-scroll');
+  const list = $('.br-list'), dock = $('.br-dock'), dockWrap = $('.br-dockwrap'), scroller = $('.br-scroll');
   const pctEl = $('.br-pct b'), leftEl = $('.br-left'), odoEl = $('.br-odo');
   const segEls = [...root.querySelectorAll('.br-seg')];
   const pile = $('.br-pile'), fin = $('.br-fin'), live = $('.br-sr');
@@ -269,7 +268,7 @@ function createRun(o) {
               <div class="slip-acts">
                 <button type="button" class="slip-copy" data-act="copy" aria-label="Copy ${esc(plain)}, the amount for ${esc(p.name)}">${IC.copy}${IC.tick}<span>Copy amount</span></button>
                 <button type="button" class="slip-go" data-act="stamp" aria-label="Stamp ${esc(p.name)} as banked">${IC.stamp}<span>Stamp it</span></button>
-                <button type="button" class="slip-ask" data-act="ask" aria-label="Unstamp ${esc(p.name)}">Stamped wrong? Unstamp</button>
+                <button type="button" class="slip-ask" data-act="ask" aria-label="Unstamp ${esc(p.name)}">Undo stamp</button>
                 <span class="slip-note"><b>Moves on its own.</b><br>Standing order's got this one.</span>
               </div>
             </div>
@@ -435,24 +434,26 @@ function createRun(o) {
     hideConfirms();
     cancel(reorderT);
     p.done = true; p.at = new Date(); lastStamped = p;
-    p.stampSmall.textContent = fmtTime(p.at) ? `${fmtDay(p.at)} · ${fmtTime(p.at)}` : 'Banked';
+    p.stampSmall.textContent = fmtTime(p.at) ? `${fmtTime(p.at)} · ${fmtDay(p.at)}` : 'Banked';
     cb('onToggle', p.i, true);
     labelSlip(p);
     const { el, body, stampEl: st } = p;
+    const hadFocus = el.contains(document.activeElement);
     const dragged = body.style.transform;
     body.style.transition = 'none'; body.style.transform = '';
     el.classList.remove('dragging', 'armed', 'peek');
     el.classList.add('banked');
     el.style.setProperty('--p', '1');
+    if (hadFocus) refocus(p);
     if (reduce) { impact(p); p.busy = false; afterStamp(); return; }
     if (dragged) anim(body, [{ transform: dragged }, { transform: 'none' }], { duration: 190, easing: 'cubic-bezier(.2,.9,.25,1)' });
     const r = p.rot;
     const S = (sc, rot, x) => Object.assign({ transform: `translate(-50%,-50%) rotate(${rot}deg) scale(${sc})` }, x);
     const drg = from === 'drag';
-    const dur = drg ? 440 : 360, hitAt = drg ? .7 : .58;
+    const dur = drg ? 380 : 310, hitAt = drg ? .62 : .56;
     anim(st, drg ? [
       S(1.12, r, { opacity: .95, filter: 'blur(0px)', easing: 'cubic-bezier(.2,.8,.3,1)' }),
-      S(2.5, r - 16, { opacity: .5, filter: 'blur(2px)', offset: .36, easing: 'cubic-bezier(.8,0,1,.6)' }),
+      S(2.5, r - 16, { opacity: .5, filter: 'blur(2px)', offset: .27, easing: 'cubic-bezier(.8,0,1,.6)' }),
       S(.88, r, { opacity: 1, filter: 'blur(0px)', offset: hitAt, easing: 'cubic-bezier(.2,1.9,.4,1)' }),
       S(1, r, { opacity: 1, filter: 'blur(0px)' })
     ] : [
@@ -488,6 +489,12 @@ function createRun(o) {
     const n = leftN();
     announce(`${p.name} stamped banked. ${n ? `${n} slip${n === 1 ? '' : 's'} left.` : 'All banked.'}`);
     flyPlus(p, c, () => renderProgress(p));
+  }
+  function refocus(p) {
+    try {
+      const next = parts.find(x => !x.done && x !== p);
+      (next ? next.el.querySelector('.slip-go') : root).focus({ preventScroll: true });
+    } catch (_) { /* ignore */ }
   }
   function afterStamp() {
     if (closing) return;
@@ -538,7 +545,10 @@ function createRun(o) {
     p.el.classList.add('confirming');
     cancel(p.confirmT); p.confirmT = later(() => hideConfirm(p), 5000);
     snd('tap'); hap('light');
-    later(() => { try { p.el.querySelector('.conf-keep').focus({ preventScroll: true }); } catch (_) { /* ignore */ } }, 50);
+    later(() => {
+      try { p.el.querySelector('.conf-keep').focus({ preventScroll: true }); } catch (_) { /* ignore */ }
+      try { p.el.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); } catch (_) { /* ignore */ }
+    }, reduce ? 0 : 360);
   }
   function hideConfirm(p) { if (p && p.el) { p.el.classList.remove('confirming'); cancel(p.confirmT); } }
   function hideConfirms(except) { parts.forEach(p => { if (p !== except) hideConfirm(p); }); }
@@ -617,6 +627,7 @@ function createRun(o) {
     if (!ok) ok = fallbackCopy(text);
     if (closing) return;
     const lbl = btn.querySelector('span');
+    if (ok && !btn.style.width) btn.style.width = btn.offsetWidth + 'px';
     btn.classList.remove('copied', 'nocopy'); void btn.offsetWidth;
     btn.classList.add(ok ? 'copied' : 'nocopy');
     lbl.textContent = ok ? 'Copied' : `Copy failed. It's ${text}`;
@@ -627,7 +638,7 @@ function createRun(o) {
       announce(`Copied ${text}`);
     } else { snd('error'); hap('error'); }
     cancel(p.copyT);
-    p.copyT = later(() => { btn.classList.remove('copied', 'nocopy'); lbl.textContent = 'Copy amount'; }, ok ? 1800 : 3500);
+    p.copyT = later(() => { btn.classList.remove('copied', 'nocopy'); btn.style.width = ''; lbl.textContent = 'Copy amount'; }, ok ? 1800 : 3500);
   }
   function fallbackCopy(text) {
     let inp = null;
@@ -668,8 +679,8 @@ function createRun(o) {
 
   /* ----- finale ----- */
   function measurePile() {
-    pileY = Math.round(clamp(innerHeight * .34, 170, 380));
-    fin.style.setProperty('--py', pileY + 'px');
+    pileY = Math.round(clamp(innerHeight * .39, 170, 400));
+    root.style.setProperty('--py', pileY + 'px');
   }
   function buildPile(instant) {
     pile.textContent = '';
@@ -724,7 +735,7 @@ function createRun(o) {
     }
     const n = buildPile(instant);
     root.classList.add('fin-on');
-    if (!instant && !reduce) { await sleep(n * 75 + 640 + 260); if (closing) return; }
+    if (!instant && !reduce) { await sleep(n * 75 + 600 + 140); if (closing) return; }
     // copy
     const stampedNow = parts.filter(p => p.at).length, autoN = parts.filter(p => p.auto).length;
     const secs = Math.round((Date.now() - t0) / 1000);
@@ -803,6 +814,7 @@ function createRun(o) {
       return;
     }
     cancel(scrapT); scrapArmed = false; locked = true;
+    scrapBtn.textContent = 'Scrapped.';
     hideConfirms();
     cb('onScrap');
     snd('delete'); hap('heavy');
@@ -814,13 +826,13 @@ function createRun(o) {
         const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return;
         const rot = rnd(-38, 38), dx = rnd(-90, 90);
         anim(el, [
-          { transform: 'none', opacity: 1 },
-          { transform: `translate(${(dx * .15).toFixed(0)}px,-22px) rotate(${(rot * .12).toFixed(1)}deg)`, opacity: 1, offset: .22 },
-          { transform: `translate(${dx.toFixed(0)}px,${innerHeight}px) rotate(${rot.toFixed(1)}deg)`, opacity: .4 }
-        ], { duration: 720, delay: k++ * 50, easing: 'cubic-bezier(.5,0,.9,.5)', fill: 'forwards' });
+          { transform: 'none', opacity: 1, easing: 'cubic-bezier(.2,.8,.4,1)' },
+          { transform: `translate(${(dx * .12).toFixed(0)}px,-18px) rotate(${(rot * .15).toFixed(1)}deg)`, opacity: 1, offset: .16, easing: 'cubic-bezier(.5,0,.85,.4)' },
+          { transform: `translate(${dx.toFixed(0)}px,${Math.round(innerHeight * 1.05)}px) rotate(${rot.toFixed(1)}deg)`, opacity: .5 }
+        ], { duration: 600, delay: k++ * 45, easing: 'linear', fill: 'forwards' });
       });
       root.classList.remove('quake'); void root.offsetWidth; root.classList.add('quake');
-      await sleep(560);
+      await sleep(600 + Math.min(k, 4) * 45);
     }
     close('scrapped');
   }
@@ -851,7 +863,10 @@ function createRun(o) {
   scrapBtn.addEventListener('click', guard(scrapTap));
   $('.fin-nice').addEventListener('click', guard(() => close('complete')));
   $('.fin-undo').addEventListener('click', guard(undoLast));
-  scroller.addEventListener('scroll', () => { if (drag && !drag.active) drag = null; }, { passive: true });
+  scroller.addEventListener('scroll', () => {
+    if (drag && !drag.active) drag = null;
+    try { dockWrap.classList.toggle('stuck', scroller.scrollTop > 2 && dockWrap.getBoundingClientRect().top <= scroller.getBoundingClientRect().top + 8); } catch (_) { /* ignore */ }
+  }, { passive: true });
 
   function onKey(e) {
     try {

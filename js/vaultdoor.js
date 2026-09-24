@@ -30,15 +30,15 @@ function injectCss() {
     try {
       const href = new URL('../css/vaultdoor.css', import.meta.url).href;
       const existing = document.querySelector('link[data-vaultdoor]');
-      if (existing) { resolve(); return; }
+      if (existing) { resolve(!!existing.sheet); return; }
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = href;
       link.dataset.vaultdoor = '';
-      link.onload = () => resolve();
-      link.onerror = () => resolve();
+      link.onload = () => resolve(true);
+      link.onerror = () => resolve(false);
       (document.head || document.documentElement).appendChild(link);
-    } catch (e) { resolve(); }
+    } catch (e) { resolve(false); }
   });
   return cssPromise;
 }
@@ -228,7 +228,7 @@ function gaugeSvg(id) {
     <path d="M ${(Math.sin(81 * Math.PI / 180) * 13.9).toFixed(2)} ${(-Math.cos(81 * Math.PI / 180) * 13.9).toFixed(2)} A 13.9 13.9 0 0 1 ${(Math.sin(135 * Math.PI / 180) * 13.9).toFixed(2)} ${(-Math.cos(135 * Math.PI / 180) * 13.9).toFixed(2)}" fill="none" stroke="#dc143c" stroke-width="1" opacity=".85"/>
     ${ticks}
     <g class="vd-gauge-num">${nums}</g>
-    <text class="vd-gauge-lbl" y="6.4" text-anchor="middle">VAULT PSI</text>
+    <text class="vd-gauge-lbl" y="11.2" text-anchor="middle">VAULT PSI</text>
   </svg>`;
 }
 
@@ -247,6 +247,7 @@ function build(id) {
   <div class="vd-rig">
     <div class="vd-c vd-under"><div class="vd-flood"></div><div class="vd-bore"></div></div>
     <div class="vd-wall">
+      <div class="vd-boxes vd-boxes-l"></div><div class="vd-boxes vd-boxes-r"></div>
       <div class="vd-side vd-side-l"><div class="vd-gauge"><div class="vd-gauge-face">${gaugeSvg(id)}<i class="vd-needle"></i><b></b></div></div></div>
       <div class="vd-side vd-side-r"><div class="vd-name"><span class="vd-name-t">Crimson <em>Cut</em></span><span class="vd-name-s">Reserve vault &middot; N&ordm; 0451</span><i></i><i></i><i></i><i></i></div></div>
     </div>
@@ -314,31 +315,49 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
   const root = document.createElement('div');
   root.className = 'vd';
   root.setAttribute('aria-hidden', 'true');
-  // critical inline styles: cover the host even before the stylesheet lands
+  // critical inline styles: cover the host (and hide the unstyled art) until the stylesheet lands
   root.style.cssText = 'position:absolute;inset:0;overflow:hidden;border-radius:inherit;background:#0d0a0b;z-index:6;';
   root.innerHTML = build(id);
   host.appendChild(root);
+  let cssOk = false;
+  const rigEl = root.firstElementChild;
+  if (rigEl) rigEl.style.visibility = 'hidden';
+  css.then((ok) => {
+    cssOk = !!ok;
+    if (!cssOk) return;
+    root.style.removeProperty('background');
+    if (rigEl) rigEl.style.removeProperty('visibility');
+  });
 
   const q = (s) => root.querySelector(s);
   const el = {
     rig: q('.vd-rig'), door: q('.vd-door'), drot: q('.vd-drot'), wheel: q('.vd-wheel'), wrot: q('.vd-wrot'),
-    wshadow: q('.vd-wshadow'), bolts: [...root.querySelectorAll('.vd-bolt > i')], seam: q('.vd-seam'),
+    wshadow: q('.vd-wshadow'), boltsWrap: q('.vd-bolts'), bolts: [...root.querySelectorAll('.vd-bolt > i')], seam: q('.vd-seam'),
     flood: q('.vd-flood'), bore: q('.vd-bore'), bloom: q('.vd-bloom'), rays: q('.vd-rays'),
     fshade: q('.vd-fshade'), glint: q('.vd-glint'), needle: q('.vd-needle'), fx: q('.vd-fxc'),
   };
 
   // ---------------------------------------------------------------- sizing
   let unit = 0;
+  let flyScale = 2.2;
   function layout() {
     try {
       const w = host.clientWidth, h = host.clientHeight;
       if (!w || !h) return;
       const A = Math.min(w, h) * 0.95;
       unit = A / 100;
+      // zoom far enough that the door hole clears the whole panel as the rig fades
+      flyScale = Math.max(2.2, Math.min(9, (Math.hypot(w, h) / 2) / (DOOR_R * unit) * 1.08));
       root.style.fontSize = unit.toFixed(3) + 'px';
+      try {
+        const cs = getComputedStyle(host);
+        const bw = parseFloat(cs.borderTopWidth) || 0;
+        const rad = (k) => Math.max(0, (parseFloat(cs[k]) || 0) - bw) + 'px';
+        root.style.borderRadius = `${rad('borderTopLeftRadius')} ${rad('borderTopRightRadius')} ${rad('borderBottomRightRadius')} ${rad('borderBottomLeftRadius')}`;
+      } catch (e) { /* keep border-radius:inherit */ }
       const sideEm = ((w - A) / 2) / unit;
       root.classList.toggle('is-wide', sideEm >= 62);
-      root.classList.toggle('is-xwide', sideEm >= 120);
+      root.classList.toggle('is-xwide', sideEm >= 125);
     } catch (e) { /* ignore */ }
   }
   layout();
@@ -428,7 +447,7 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
 
     const turn = clamp01(-ry / 90);
     el.fshade.style.opacity = (turn * 0.62).toFixed(3);
-    el.glint.style.transform = `translateX(${(-70 + 190 * clamp01(-ry / 70)).toFixed(1)}%) rotate(18deg)`;
+    el.glint.style.transform = `translateX(${(-120 + 400 * clamp01(-ry / 75)).toFixed(1)}%) rotate(16deg)`;
     el.glint.style.opacity = ps > 0 && ps < 1 ? '1' : '0';
 
     // light
@@ -436,10 +455,14 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
     const seamOut = seg(t, T.swing[0] + sd * 0.25, T.swing[0] + sd * 0.7);
     el.seam.style.opacity = (seamIn * (1 - seamOut)).toFixed(3);
     const pf = seg(t, T.fade[0], T.fade[1]);
-    const fl = seg(t, T.swing[0] + sd * 0.08, T.swing[0] + sd * 0.5) * (1 - seg(t, T.fade[0] + (T.fade[1] - T.fade[0]) * 0.2, T.fade[1]));
-    el.flood.style.opacity = (fl * 0.92).toFixed(3);
-    el.bloom.style.opacity = fl.toFixed(3);
-    el.rays.style.opacity = (fl * 0.85).toFixed(3);
+    const burst = easeOutCubic(seg(t, T.swing[0] + sd * 0.02, T.swing[0] + sd * 0.28));
+    const settle = seg(t, T.swing[0] + sd * 0.3, T.swing[1] + 0.05);
+    const gone = seg(t, T.fade[0], T.fade[1]);
+    const fl = burst * (1 - 0.6 * settle) * (1 - gone);
+    el.flood.style.opacity = fl.toFixed(3);
+    el.bloom.style.opacity = (fl * (1 - 0.3 * settle)).toFixed(3);
+    el.rays.style.opacity = (0.72 * burst * (1 - 0.75 * settle) * (1 - gone)).toFixed(3);
+    el.boltsWrap.style.visibility = ps > 0.25 ? 'hidden' : '';
     el.rays.style.transform = `rotate(${(t * 24).toFixed(2)}deg)`;
     el.bore.style.opacity = seg(t, T.swing[0], T.swing[0] + sd * 0.25).toFixed(3);
 
@@ -458,7 +481,7 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
       sx += k * Math.sin(d * 2 * Math.PI * 23);
       sy += k * Math.cos(d * 2 * Math.PI * 19 + 1);
     }
-    const sc = 1 + 1.05 * easeInCubic(pf);
+    const sc = 1 + (flyScale - 1) * easeInCubic(pf);
     el.rig.style.transform = `translate(${sx.toFixed(3)}em,${sy.toFixed(3)}em) scale(${sc.toFixed(4)})`;
     el.rig.style.opacity = (1 - easeInQuad(pf)).toFixed(3);
   }
@@ -493,13 +516,14 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
 
   function dust(fast) {
     const n = fast ? 1 : 2;
+    puff(0, 0, { cls: 'vd-shock', size: 88, s0: 0.92, s1: 1.22, o0: 0.9, dx: 0, dy: 0, dur: fast ? 380 : 520 });
     BOLT_ANGLES.forEach((deg, i) => {
       const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
       for (let k = 0; k < n; k++) {
-        const d = 5 + Math.random() * 7, tang = (Math.random() - 0.5) * 6;
+        const d = 6 + Math.random() * 9, tang = (Math.random() - 0.5) * 8;
         puff(c * 41, s * 41, {
-          size: 4 + Math.random() * 4, s0: 0.35, s1: 1.7 + Math.random(), o0: 0.85,
-          dx: c * d - s * tang, dy: s * d + c * tang, g: -2, dur: 650 + Math.random() * 350, delay: i * 6,
+          size: 7 + Math.random() * 5, s0: 0.4, s1: 2 + Math.random() * 1.2, o0: 1,
+          dx: c * d - s * tang, dy: s * d + c * tang, g: -2.5, dur: 700 + Math.random() * 400, delay: i * 6,
         });
       }
       if (!fast || i % 2 === 0) {
@@ -515,7 +539,7 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
       const a = (i / n) * Math.PI * 2 + Math.random() * 0.2, c = Math.cos(a), s = Math.sin(a);
       const d = 6 + Math.random() * 8, sw = (Math.random() - 0.5) * 8;
       puff(c * 37.5, s * 37.5, {
-        cls: 'vd-steam', size: 5 + Math.random() * 5, s0: 0.3, s1: 2 + Math.random() * 1.2, o0: 0.9,
+        cls: 'vd-steam', size: 8 + Math.random() * 6, s0: 0.35, s1: 2.2 + Math.random() * 1.3, o0: 1,
         dx: c * d - s * sw, dy: s * d + c * sw, g: -3, dur: 700 + Math.random() * 400, delay: Math.random() * 60,
       });
     }
@@ -565,7 +589,7 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
     run.prevNotch = notch;
     run.prevDial = da;
     const step = Math.floor(wheelLinear(T, t) / 30 + 1e-6);
-    if (step !== run.prevStep) {
+    if (step !== run.prevStep && step < 9) {
       snd('key', { i: step, rate: 0.62 + (step % 3) * 0.04, vol: 0.9 });
       hap('tick');
     }
@@ -576,7 +600,7 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
   function frame(now) {
     if (!run) return;
     try {
-      const dt = Math.min(0.05, Math.max(0, (now - run.last) / 1000));
+      const dt = Math.min(0.1, Math.max(0, (now - run.last) / 1000));
       run.last = now;
       run.t += dt * run.rate;
       const t = Math.min(run.t, run.T.end);
@@ -599,8 +623,10 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
     try { clearTimeout(r.watchdog); } catch (e) { /* ignore */ }
     state = 'open';
     root.classList.add('is-open', 'is-passive');
+    root.classList.remove('is-running');
     clearPuffs();
     pending = null;
+    pendingResolve = null;
     try { r.resolve(true); } catch (e) { /* ignore */ }
   }
 
@@ -617,44 +643,58 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
   }
 
   // ---------------------------------------------------------------- public
+  let openToken = 0;
+  let pendingResolve = null;
+
   function open(o) {
-    try {
-      if (state === 'open') return Promise.resolve(true);
-      if (state === 'opening' && pending) return pending;
-      layout();
-      if (reduced()) {
-        state = 'open';
-        root.classList.add('is-open', 'is-passive');
-        return Promise.resolve(true);
-      }
-      const fast = o && typeof o.fast === 'boolean' ? o.fast : sessionOpens > 0;
-      sessionOpens++;
-      state = 'opening';
-      root.classList.remove('is-open', 'is-passive');
-      setLight('arming');
-      const T = timeline(fast);
-      pending = new Promise((resolve) => {
-        const go = () => {
-          if (state !== 'opening' || run) return;
+    if (state === 'open') return Promise.resolve(true);
+    if (state === 'opening' && pending) return pending;
+    layout();
+    if (reduced()) {
+      state = 'open';
+      setLight('armed');
+      root.classList.add('is-open', 'is-passive');
+      return Promise.resolve(true);
+    }
+    const fast = o && typeof o.fast === 'boolean' ? o.fast : sessionOpens > 0;
+    sessionOpens++;
+    state = 'opening';
+    root.classList.remove('is-open', 'is-passive');
+    setLight('arming');
+    const T = timeline(fast);
+    const token = ++openToken;
+    pending = new Promise((resolve) => {
+      pendingResolve = resolve;
+      const start = () => {
+        try {
+          if (token !== openToken || state !== 'opening' || run) { resolve(false); return; }
+          if (!cssOk) {
+            // no stylesheet (offline first run, blocked): the art is not drawable, just get out of the way
+            state = 'open';
+            pendingResolve = null;
+            pending = null;
+            root.classList.add('is-open', 'is-passive');
+            root.style.visibility = 'hidden';
+            resolve(true);
+            return;
+          }
           layout();
           run = {
             T, t: 0, rate: 1, last: performance.now(), raf: 0, resolve, skipped: false,
             cues: buildCues(T), ci: 0, prevDial: 0, prevNotch: 0, prevStep: 0, prevT: 0,
-            watchdog: setTimeout(() => { if (run) { render(run.T, run.T.end); finish(); } }, (T.end + 2.5) * 1000),
+            watchdog: setTimeout(() => { if (run && run.resolve === resolve) { try { render(run.T, run.T.end); } catch (e) { /* ignore */ } finish(); } }, (T.end + 2.5) * 1000),
           };
+          root.classList.add('is-running');
           run.raf = requestAnimationFrame(frame);
-        };
-        closeResolvers.add(resolve);
-        const waitCss = Promise.race([css, new Promise((r) => setTimeout(r, 1200))]);
-        waitCss.then(() => { closeResolvers.delete(resolve); if (state === 'opening') go(); else resolve(false); }, () => go());
-      });
-      return pending;
-    } catch (e) {
-      finishHard();
-      return Promise.resolve(false);
-    }
+        } catch (e) {
+          finishHard();
+          resolve(false);
+        }
+      };
+      Promise.race([css, new Promise((r) => setTimeout(r, 1200))]).then(start, start);
+    });
+    return pending;
   }
-  const closeResolvers = new Set();
 
   function finishHard() {
     try {
@@ -664,29 +704,34 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
     } catch (e) { /* ignore */ }
   }
 
-  function close() {
-    try {
-      if (run) {
-        const r = run;
-        run = null;
-        try { cancelAnimationFrame(r.raf); } catch (e) { /* ignore */ }
-        try { clearTimeout(r.watchdog); } catch (e) { /* ignore */ }
-        try { r.resolve(false); } catch (e) { /* ignore */ }
-      }
-      closeResolvers.forEach((r) => { try { r(false); } catch (e) { /* ignore */ } });
-      closeResolvers.clear();
-      pending = null;
-      clearPuffs();
-      state = 'sealed';
-      root.classList.remove('is-open', 'is-passive');
-      layout();
-      resetVisual();
-    } catch (e) { /* ignore */ }
+  function stopRun(value) {
+    openToken++;
+    if (run) {
+      const r = run;
+      run = null;
+      try { cancelAnimationFrame(r.raf); } catch (e) { /* ignore */ }
+      try { clearTimeout(r.watchdog); } catch (e) { /* ignore */ }
+      try { r.resolve(value); } catch (e) { /* ignore */ }
+    }
+    if (pendingResolve) { try { pendingResolve(value); } catch (e) { /* ignore */ } }
+    pendingResolve = null;
+    pending = null;
   }
 
-  root.addEventListener('pointerdown', (e) => {
+  function close() {
+    stopRun(false);
+    clearPuffs();
+    state = 'sealed';
+    root.classList.remove('is-open', 'is-passive', 'is-running');
+    root.style.removeProperty('visibility');
+    layout();
+    resetVisual();
+  }
+
+  // click (not pointerdown) so a scroll that starts on the door neither skips nor opens it
+  root.addEventListener('click', () => {
     try {
-      if (state === 'opening') { skip(); e.preventDefault(); }
+      if (state === 'opening') skip();
       else if (state === 'sealed') open();
     } catch (err) { /* ignore */ }
   });
@@ -694,7 +739,8 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
   // debug/verification hook (not part of the contract): freeze at time t
   function seek(t, o) {
     try {
-      if (run) { const r = run; run = null; cancelAnimationFrame(r.raf); clearTimeout(r.watchdog); r.resolve(false); }
+      stopRun(false);
+      clearPuffs();
       state = 'sealed';
       root.classList.remove('is-open', 'is-passive');
       layout();
@@ -708,7 +754,7 @@ function create(host, { Sound, Haptics, reduceMotion = false } = {}) {
   resetVisual();
 
   return {
-    open: (o) => { try { return open(o); } catch (e) { return Promise.resolve(false); } },
+    open: (o) => { try { return open(o); } catch (e) { finishHard(); return Promise.resolve(false); } },
     close: () => { try { close(); } catch (e) { /* ignore */ } },
     el: root,
     get state() { return state; },

@@ -45,23 +45,28 @@
 
 /* ---------- shell ---------- */
 .br-shell{position:absolute;inset:0;margin:0 auto;max-width:560px;display:flex;flex-direction:column;padding-top:var(--s-top)}
-.br-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 16px 28px;scrollbar-width:none;transition:opacity .35s ease}
+.br-scroll{--padx:16px;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 var(--padx) 28px;scrollbar-width:none;transition:opacity .35s ease;
+  -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent)}
 .br-scroll::-webkit-scrollbar{display:none}
 
-.br-hero{padding:8px 2px 0}
+.br-hero{padding:14px 2px 0}
 .br-top{display:flex;align-items:center;justify-content:space-between;gap:10px;animation:brDrop .6s var(--eo) .05s backwards}
 .br-eye{display:inline-flex;align-items:center;gap:8px;font-family:var(--fm);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#ff8095}
 .br-eye i{width:7px;height:7px;border-radius:50%;background:var(--crh);box-shadow:0 0 10px var(--crh);animation:brBlink 1.6s ease-in-out infinite}
 @keyframes brBlink{50%{opacity:.25}}
 .br-serial{font-family:var(--fm);font-size:10.5px;letter-spacing:.12em;color:rgba(244,236,238,.6);border:1px solid var(--ln2);border-radius:99px;padding:4px 9px;white-space:nowrap}
-.br-title{margin:10px 0 14px;font-family:var(--fd);font-weight:900;font-size:clamp(50px,15.5vw,82px);line-height:.84;letter-spacing:.005em;text-transform:uppercase;text-shadow:0 6px 40px rgba(0,0,0,.6);animation:brTitle .7s var(--eo) .1s backwards}
+.br-title{margin:10px 0 14px;font-family:var(--fd);font-weight:900;font-size:clamp(48px,14.2vw,80px);line-height:.84;letter-spacing:.005em;text-transform:uppercase;text-shadow:0 6px 40px rgba(0,0,0,.6);animation:brTitle .7s var(--eo) .1s backwards}
 .br-title em{display:block;font-style:normal;color:var(--cr);-webkit-text-stroke:1px var(--crh);text-shadow:0 0 34px rgba(220,20,60,.55)}
 @keyframes brTitle{from{opacity:0;transform:translateY(-14px) skewX(-8deg);filter:blur(8px)}}
 @keyframes brDrop{from{opacity:0;transform:translateY(-10px)}}
 @keyframes brRise{from{opacity:0;transform:translateY(18px)}}
 
 /* ---------- progress dock ---------- */
-.br-dock{position:sticky;top:4px;z-index:6;margin:0 -2px;padding:13px 14px 13px;border-radius:20px;
+.br-dockwrap{position:sticky;top:0;z-index:6;margin:0 calc(var(--padx) * -1);padding:4px calc(var(--padx) - 2px) 12px}
+.br-dockwrap::before{content:"";position:absolute;left:0;right:0;top:0;bottom:-10px;pointer-events:none;opacity:0;transition:opacity .25s ease;
+  background:linear-gradient(180deg,rgba(14,6,9,.98) 0%,rgba(12,6,8,.94) 70%,rgba(12,6,8,0))}
+.br-dockwrap.stuck::before{opacity:1}
+.br-dock{position:relative;padding:13px 14px 13px;border-radius:20px;
   border:1px solid rgba(255,58,92,.24);
   background:linear-gradient(180deg,rgba(40,14,22,.94),rgba(18,12,14,.94));
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
@@ -98,7 +103,7 @@
 .br-odo .s{display:inline-block;line-height:1}
 .br-odo .s.cur{font-size:.62em;margin-bottom:.06em;color:var(--crh);margin-right:1px}
 
-.br-tip{display:flex;align-items:center;gap:10px;margin:12px 2px 2px;font-size:13px;line-height:1.35;color:var(--mu);animation:brRise .6s var(--eo) .22s backwards}
+.br-tip{display:flex;align-items:center;gap:10px;margin:0 2px 2px;font-size:13px;line-height:1.35;color:var(--mu);animation:brRise .6s var(--eo) .22s backwards}
 .br-tip svg{flex:none;width:30px;height:30px;padding:6px;border-radius:10px;color:var(--crh);background:rgba(220,20,60,.12);border:1px solid rgba(255,58,92,.25)}
 .br-tip b{color:var(--tx);font-weight:700}
 
@@ -134,7 +139,7 @@
 @keyframes brArmed{to{border-color:#fff}}
 .br-slip.peek .slip-under{opacity:1;--p:.35}
 
-.slip-body{position:relative;will-change:transform;filter:drop-shadow(0 16px 20px rgba(0,0,0,.55)) drop-shadow(0 2px 2px rgba(0,0,0,.5));touch-action:pan-y}
+.slip-body{position:relative;will-change:transform;filter:drop-shadow(0 14px 18px rgba(0,0,0,.6));touch-action:pan-y}
 .slip-paper{position:relative;display:flex;min-height:168px;border-radius:8px 16px 16px 8px;overflow:hidden;
   background:
     radial-gradient(120% 140% at 102% -10%,rgba(255,58,92,.17),transparent 52%),
@@ -251,8 +256,7 @@
 .br-fly{position:fixed;left:0;top:0;z-index:30;pointer-events:none;font-family:var(--fd);font-weight:900;font-size:28px;line-height:1;color:#fff;white-space:nowrap;text-shadow:0 0 18px var(--crh),0 0 4px var(--cr)}
 
 /* ---------- footer ---------- */
-.br-foot{flex:none;position:relative;z-index:7;display:flex;align-items:center;gap:12px;padding:12px 16px calc(var(--s-bot) + 12px);
-  background:linear-gradient(180deg,rgba(10,7,8,0),rgba(10,7,8,.92) 38%);animation:brRise .6s var(--eo) .3s backwards;transition:opacity .3s ease,transform .4s var(--eo)}
+.br-foot{flex:none;position:relative;z-index:7;display:flex;align-items:center;gap:12px;padding:12px 16px calc(var(--s-bot) + 12px);animation:brRise .6s var(--eo) .3s backwards;transition:opacity .3s ease,transform .4s var(--eo)}
 .br-foot::before{content:"";position:absolute;left:16px;right:16px;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,58,92,.25),transparent)}
 .br-scrap{border:0;background:none;padding:10px 4px;font-size:13px;font-weight:700;color:#d98394;text-decoration:underline dotted rgba(255,128,149,.45);text-underline-offset:4px;transition:all .25s var(--eo);border-radius:12px;white-space:nowrap}
 .br-scrap.armed{padding:10px 14px;background:var(--cr);color:#fff;text-decoration:none;box-shadow:0 0 24px -4px rgba(220,20,60,.9);animation:brNope .4s}
@@ -268,28 +272,34 @@
 @keyframes brJolt{30%{transform:translateY(3px)}60%{transform:translateY(-1px)}}
 
 /* ---------- finale ---------- */
-.br.fin-prep .br-scroll{opacity:0;pointer-events:none}
+.br-hero,.br-dockwrap,.br-tip,.br-div{transition:opacity .35s ease}
+.br.fin-prep .br-hero,.br.fin-prep .br-dockwrap,.br.fin-prep .br-tip,.br.fin-prep .br-div{opacity:0}
+.br.fin-prep .br-scroll{pointer-events:none}
+.br.fin-on .br-scroll{visibility:hidden}
 .br.fin-prep .br-foot{opacity:0;transform:translateY(20px);pointer-events:none}
 .br-pile{position:absolute;inset:0;z-index:8;pointer-events:none}
 .br-pile .br-slip{position:fixed;margin:0;transform-origin:50% 84px;pointer-events:none}
 .br-pile .slip-under,.br-pile .slip-confirm{display:none}
-.br-fin{position:absolute;inset:0;z-index:9;pointer-events:none;--py:40vh}
-.fin-glow{position:absolute;left:50%;top:var(--py);width:130vmax;height:130vmax;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(220,20,60,.30),rgba(107,10,30,.14) 30%,transparent 60%);animation:brFade .8s ease both}
+.br-pile .slip-acts{visibility:hidden}
+.br-pile .br-slip.banked .slip-paper{filter:saturate(.8) brightness(.9)}
+.br-pile .br-slip.auto .slip-paper{filter:saturate(.3) brightness(.75)}
+.br-fin{position:absolute;inset:0;z-index:9;pointer-events:none}
+.br.fin-on .br-pile::before{content:"";position:absolute;left:50%;top:var(--py,40vh);z-index:0;width:130vmax;height:130vmax;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(220,20,60,.34),rgba(107,10,30,.16) 28%,transparent 58%);animation:brFade .8s ease both}
 .fin-stamp{position:absolute;left:50%;top:var(--py);z-index:2;color:var(--ink);transform:translate(-50%,-50%) rotate(-7deg);filter:drop-shadow(0 0 26px rgba(220,20,60,.75)) drop-shadow(0 12px 30px rgba(0,0,0,.8))}
 .fin-ink{position:relative;padding:.02em .16em .04em;border:clamp(6px,1.9vw,9px) solid currentColor;border-radius:clamp(16px,5vw,26px);
-  font-family:var(--fd);font-weight:900;font-size:clamp(86px,27vw,150px);line-height:.9;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;
-  background:rgba(12,4,7,.55);
+  font-family:var(--fd);font-weight:900;font-size:clamp(70px,21.5vw,138px);line-height:.9;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;
+  background:rgba(12,4,7,.42);
   -webkit-mask-image:var(--grit);mask-image:var(--grit);-webkit-mask-size:260px 260px;mask-size:260px 260px}
 .fin-ink::before{content:"";position:absolute;inset:clamp(4px,1.3vw,7px);border:2px solid currentColor;border-radius:clamp(10px,3.4vw,18px);opacity:.8}
 .fin-ink span{display:block;-webkit-text-stroke:1px #ff5a77}
 .fin-copy{position:absolute;left:16px;right:16px;top:calc(var(--py) + var(--ph2,120px) + 26px);display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;pointer-events:auto;max-width:520px;margin:0 auto}
 .fin-copy>*{animation:brRise .6s var(--eo) backwards}
-.fin-copy>:nth-child(1){animation-delay:.28s}
-.fin-copy>:nth-child(2){animation-delay:.36s}
-.fin-copy>:nth-child(3){animation-delay:.44s}
-.fin-copy>:nth-child(4){animation-delay:.56s}
-.fin-copy>:nth-child(5){animation-delay:.7s}
-.fin-sub{margin:4px 0 0;font-family:var(--fm);font-size:14px;line-height:1.45;letter-spacing:.02em;max-width:340px}
+.fin-copy>:nth-child(1){animation-delay:.42s}
+.fin-copy>:nth-child(2){animation-delay:.5s}
+.fin-copy>:nth-child(3){animation-delay:.58s}
+.fin-copy>:nth-child(4){animation-delay:.7s}
+.fin-copy>:nth-child(5){animation-delay:.86s}
+.fin-sub{text-wrap:balance;margin:4px 0 0;font-family:var(--fm);font-size:14px;line-height:1.45;letter-spacing:.02em;max-width:340px}
 .fin-sub b{color:var(--crh);font-weight:600}
 .fin-stats{margin:0;font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mu)}
 .br-btn{position:relative;overflow:hidden;width:min(320px,100%);margin-top:12px;border:0;border-radius:16px;padding:16px;background:linear-gradient(180deg,#E5183F,#A30E2D);color:#fff;font-family:var(--fd);font-weight:900;font-size:24px;letter-spacing:.14em;text-transform:uppercase;box-shadow:0 14px 34px -12px rgba(220,20,60,.85),inset 0 1px 0 rgba(255,255,255,.28);transition:transform .2s var(--spr),filter .2s}
@@ -310,7 +320,7 @@
 
 /* ---------- desktop ---------- */
 @media (min-width:600px){
-  .br-scroll{padding-left:20px;padding-right:20px}
+  .br-scroll{--padx:20px}
   .br-title{font-size:84px}
 }
 

@@ -801,11 +801,11 @@ function renderHeader() {
   pill.classList.remove('soon', 'today');
   if (!pd) $('#paydayTxt').textContent = 'Set payday';
   else if (pd.days === 0) { $('#paydayTxt').textContent = 'PAYDAY'; pill.classList.add('today'); }
+  else { $('#paydayTxt').textContent = pd.days === 1 ? 'Payday tomorrow' : `Payday in ${pd.days}d`; if (pd.days <= 3) pill.classList.add('soon'); }
   const today = !!pd && pd.days === 0;
   const cutToday = state.history.some(h => new Date(h.t).toDateString() === new Date().toDateString());
   document.body.classList.toggle('payday', today);
   $('#paydayBanner').hidden = !today || cutToday;
-  else { $('#paydayTxt').textContent = pd.days === 1 ? 'Payday tomorrow' : `Payday in ${pd.days}d`; if (pd.days <= 3) pill.classList.add('soon'); }
 }
 $('#rankPill').addEventListener('click', () => setTab('ranks'));
 $('#paydayPill').addEventListener('click', () => { openSettings(); setTimeout(() => $('#setPayday').focus(), 400); });
@@ -821,7 +821,9 @@ function renderVault(newId) {
   const ev = progress ? progress.evaluate(state) : null;
   const paid = hist.reduce((s, h) => s + h.pay, 0);
   vPaid.set(fmt(paid));
-  vSaved.set(ev ? fmtShort(ev.totals.saved) : '-');
+  // All-time, like "paid in" (rank totals only count since the last reset).
+  const savedAll = progress ? hist.reduce((t, h) => t + h.parts.filter(p => progress.isSavings(p.name)).reduce((u, p) => u + p.amt, 0), 0) : 0;
+  vSaved.set(progress ? fmtShort(savedAll) : '-');
   vSplits.set(String(hist.length));
   vStreak.set(String(ev ? ev.streak : 0));
   const pend = pending().filter(h => h.cur === state.cur), owed = pend.reduce((s, h) => s + pendingLeft(h), 0);
