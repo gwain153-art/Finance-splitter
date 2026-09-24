@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0708">
+<meta name="color-scheme" content="dark">
+<title>Transfer Run Bench</title>
+<link rel="stylesheet" href="../css/fonts.css">
+<link rel="stylesheet" href="../css/app.css">
+<style>
+.bench{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:calc(var(--sat) + 22px) 16px calc(var(--sab) + 40px);display:flex;flex-direction:column;gap:14px}
+.bench h1{margin:0;font-family:var(--display);font-weight:900;font-size:52px;text-transform:uppercase;line-height:.88}
+.bench h1 b{color:var(--crimson);text-shadow:0 0 30px rgba(220,20,60,.5)}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.row label.chip{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+#log{margin:0;padding:12px;min-height:180px;max-height:42vh;overflow:auto;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.4);font:11.5px/1.55 var(--mono);color:var(--muted);white-space:pre-wrap}
+#log b{color:var(--text);font-weight:600}
+#log i{font-style:normal;color:var(--crimson-hi)}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="bg-fallback" aria-hidden="true"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<main class="bench">
+  <span class="eyebrow">Dev bench · js/bankrun.js</span>
+  <h1>Transfer <b>run</b></h1>
+  <p class="hint">Open a run, swipe slips right to stamp them. Callbacks log below. Tap anywhere first so sound unlocks.</p>
+  <div class="row">
+    <button class="chip" id="run6">6 slips, one auto</button>
+    <button class="chip" id="runHalf">Half banked</button>
+    <button class="chip" id="run1">Single slip</button>
+    <button class="chip" id="runDone">Everything done</button>
+    <button class="chip" id="runAuto">All auto</button>
+    <button class="chip" id="runLong">12 slips, euros</button>
+  </div>
+  <div class="row">
+    <label class="chip"><input type="checkbox" id="rm"> Reduced motion</label>
+    <label class="chip"><input type="checkbox" id="snd" checked> Sound</label>
+    <button class="chip" id="clear">Clear log</button>
+  </div>
+  <pre id="log"></pre>
+</main>
+
+<script type="module">
+import { Sound } from '../js/audio.js';
+import { Haptics } from '../js/haptics.js';
+import { createFx } from '../js/fx.js';
+import { createBackground } from '../js/bg.js';
+import { openBankRun } from '../js/bankrun.js';
+
+const $ = s => document.querySelector(s);
+Sound.install(); Haptics.install();
+let bg = { pulse() {}, setMood() {}, setCharge() {}, setTilt() {} };
+try { bg = createBackground($('#bg'), { reduceMotion: false }) || bg; } catch (e) { console.warn(e); }
+let fx = { sparkBurst() {}, confetti() {}, shockwave() {}, flash() {}, trail() {} };
+try { fx = createFx($('#fx'), { reduceMotion: false }) || fx; } catch (e) { console.warn(e); }
+
+const fmts = {
+  '£': new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }),
+  '€': new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' })
+};
+const SH = ['#DC143C', '#FF3A5C', '#B8AEB2', '#9E0F2E', '#FF8095', '#6E6468', '#E8E0E2', '#5E0B1D'];
+const base = [
+  ['Rent & bills', 1150, true], ['Savings', 630], ['Investing', 315], ['Groceries', 378], ['Fun money', 480], ['Emergency fund', 197]
+];
+const mk = (serial, rows, cur = '£') => ({
+  id: 'e-' + serial, t: Date.now() - 36e5, cur, serial,
+  pay: rows.reduce((s, r) => s + r[1], 0),
+  parts: rows.map(([name, amt, auto, done], i) => ({ name, amt, color: SH[i % SH.length], auto: !!auto, done: !!(done || auto) }))
+});
+const RUNS = {
+  run6: () => mk('CC-0004', base),
+  runHalf: () => mk('CC-0005', base.map((r, i) => i === 1 || i === 3 ? [r[0], r[1], false, true] : r)),
+  run1: () => mk('CC-0006', [['Savings', 480]]),
+  runDone: () => mk('CC-0007', base.map(r => [r[0], r[1], r[2], true])),
+  runAuto: () => mk('CC-0008', [['Rent & bills', 1150, true], ['Council tax', 162.4, true], ['Pension top-up', 250, true]]),
+  runLong: () => mk('CC-0009', [
+    ['Rent', 1200.5], ['Bills', 240.12], ['Savings', 600], ['ISA', 350], ['Groceries', 320], ['Fun', 150],
+    ['Travel', 95.75], ['Gym', 35, true], ['Gifts', 60], ['Emergency', 100], ['Holiday pot', 250], ['A really quite long bucket name for testing', 12.34]
+  ], '€')
+};
+
+const log = window.__log = [];
+function write(ev, detail) {
+  const t = new Date().toISOString().slice(11, 23);
+  log.push({ ev, detail, at: performance.now() });
+  $('#log').insertAdjacentHTML('afterbegin', `${t}  <b>${ev}</b> <i>${detail ?? ''}</i>\n`);
+}
+$('#clear').onclick = () => { log.length = 0; $('#log').textContent = ''; };
+$('#snd').onchange = e => { Sound.enabled = e.target.checked; };
+
+let run = null;
+function open(kind) {
+  const entry = RUNS[kind]();
+  write('open', `${kind} ${entry.serial}`);
+  run = window.__run = openBankRun({
+    entry,
+    fmt: n => fmts[entry.cur].format(n),
+    Sound, Haptics, fx, bg,
+    reduceMotion: $('#rm').checked,
+    onToggle(i, done) { entry.parts[i].done = done; write('onToggle', `${i} ${done}`); },
+    onScrap() { write('onScrap'); },
+    onClose(result) { write('onClose', result); run = null; }
+  });
+}
+Object.keys(RUNS).forEach(k => { $('#' + k).onclick = () => open(k); });
+const q = new URLSearchParams(location.search).get('open');
+if (q && RUNS[q]) setTimeout(() => open(q), 300);
+</script>
+</body>
+</html>

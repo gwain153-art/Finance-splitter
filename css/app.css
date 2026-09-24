@@ -476,3 +476,40 @@ body:not([data-tab="split"]) .views{padding-bottom:calc(var(--tabbar-h) + var(--
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* ---------- transfer run hooks ---------- */
+.pending-strip{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:18px;border:1px solid rgba(255,58,92,.5);background:linear-gradient(100deg,rgba(107,10,30,.75),rgba(23,17,19,.8) 60%);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);text-align:left;overflow:hidden;box-shadow:0 14px 34px -18px rgba(220,20,60,.9);animation:rise .6s var(--ease-out) backwards;transition:transform .2s var(--spring)}
+.pending-strip::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.1) 50%,transparent 60%);transform:translateX(-100%);animation:shine 3.4s ease-in-out infinite;pointer-events:none}
+.pending-strip:active{transform:scale(.97)}
+.ps-dot{width:12px;height:12px;flex:none;border-radius:50%;background:var(--crimson-hi);box-shadow:0 0 0 0 rgba(255,58,92,.7);animation:psPing 1.6s ease-out infinite}
+@keyframes psPing{0%{box-shadow:0 0 0 0 rgba(255,58,92,.7)}100%{box-shadow:0 0 0 14px rgba(255,58,92,0)}}
+.ps-text{display:flex;flex-direction:column;min-width:0;flex:1}
+.ps-text b{font-family:var(--display);font-weight:900;font-size:20px;text-transform:uppercase;letter-spacing:.03em;line-height:1.05}
+.ps-text small{font-family:var(--mono);font-size:11px;color:#ffb3c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-go{display:flex;align-items:center;gap:2px;flex:none;font-weight:800;font-size:13px;color:#fff;background:var(--crimson);border-radius:99px;padding:7px 8px 7px 12px;box-shadow:0 0 18px -4px var(--crimson)}
+.ps-go svg{width:16px;height:16px}
+.stamp-later{border:0;background:none;color:var(--muted);font-weight:700;font-size:14px;padding:10px 18px;animation:rise .6s var(--ease-out) .6s backwards}
+.bs-auto{border:1px solid var(--line);border-radius:14px}
+.b-auto{flex:none;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);border:1px solid var(--line-2);border-radius:6px;padding:2px 5px}
+.h-item{cursor:pointer;transition:transform .2s var(--spring),border-color .2s}
+.h-item:active{transform:scale(.98)}
+.h-item.pending{border-color:rgba(255,58,92,.45);background:linear-gradient(100deg,rgba(107,10,30,.35),rgba(0,0,0,.22) 60%)}
+.h-chip{grid-column:1/-1;justify-self:start;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;border-radius:99px;padding:3px 9px;border:1px solid var(--line-2);color:var(--muted)}
+.h-chip.pending{color:#fff;background:var(--crimson);border-color:var(--crimson);box-shadow:0 0 14px -4px var(--crimson)}
+.h-chip.banked{color:#ffb3c0;border-color:rgba(255,58,92,.35)}
+.h-item .stack i.todo{opacity:.3}
+.vault-pending{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;font-family:var(--mono);font-size:11px;color:#ffb3c0}
+
+/* ---------- payday mode ---------- */
+.payday-banner{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px;border-radius:18px;text-align:center;background:linear-gradient(135deg,#8a0c26,#3d0714 60%,#1a0a0f);border:1px solid var(--crimson-hi);box-shadow:0 0 40px -10px var(--crimson);animation:rise .6s var(--ease-out) backwards}
+.payday-banner b{position:relative;font-family:var(--display);font-weight:900;font-size:34px;text-transform:uppercase;letter-spacing:.04em;line-height:1;text-shadow:0 0 24px rgba(255,58,92,.9)}
+.payday-banner span:last-child{position:relative;font-size:13px;color:#ffd0d8}
+.pb-glow{position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent,rgba(255,58,92,.45),transparent 25%,transparent 50%,rgba(255,58,92,.45),transparent 75%);animation:rot 5s linear infinite}
+body.payday .note{box-shadow:0 30px 70px -24px rgba(255,58,92,.9),0 0 0 1px rgba(0,0,0,.4),inset 0 0 0 6px rgba(10,7,8,.35),inset 0 0 0 7px rgba(255,58,92,.4)}
+
+/* ---------- directional tab transitions ---------- */
+.view.from-right{animation:fromRight .45s var(--ease-out)}
+.view.from-left{animation:fromLeft .45s var(--ease-out)}
+@keyframes fromRight{from{opacity:0;transform:translateX(40px)}}
+@keyframes fromLeft{from{opacity:0;transform:translateX(-40px)}}
+.vault-hero{min-height:230px}

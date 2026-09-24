@@ -21,9 +21,11 @@ export function defaults() {
     touched: false,
     settings: { sound: true, haptics: true, motion: false },
     unlocked: {},
+    progressFrom: 0,
+    resets: 1,
     history: [],
     buckets: [
-      { id: uid(), name: 'Rent & bills', mode: 'fixed', value: 950, color: '#DC143C', goal: null },
+      { id: uid(), name: 'Rent & bills', mode: 'fixed', value: 950, color: '#DC143C', goal: null, auto: true },
       { id: uid(), name: 'Savings', mode: 'pct', value: 20, color: '#FF3A5C', goal: 5000 },
       { id: uid(), name: 'Investing', mode: 'pct', value: 10, color: '#B8AEB2', goal: null },
       { id: uid(), name: 'Groceries', mode: 'pct', value: 12, color: '#9E0F2E', goal: null },
@@ -41,20 +43,36 @@ function normalise(s) {
   if (typeof s.sound === 'boolean') out.settings.sound = s.sound;
   delete out.sound;
   out.unlocked = s.unlocked && typeof s.unlocked === 'object' ? s.unlocked : {};
+  out.progressFrom = +s.progressFrom || 0;
+  // One-off: v3 restarts everyone's rank and achievements (history is kept).
+  if (!(+s.resets >= 1)) { out.unlocked = {}; out.progressFrom = Date.now(); out.resets = 1; justReset = true; }
   out.buckets = (Array.isArray(s.buckets) ? s.buckets : d.buckets).map(b => ({
     id: b.id || uid(), name: String(b.name ?? 'Bucket'), mode: b.mode === 'fixed' ? 'fixed' : 'pct',
-    value: Math.max(0, +b.value || 0), color: b.color || SHADES[0], goal: b.goal > 0 ? +b.goal : null
+    value: Math.max(0, +b.value || 0), color: b.color || SHADES[0], goal: b.goal > 0 ? +b.goal : null, auto: !!b.auto
   }));
   // v1 history parts had no bucket id; match on name so goals still count.
   const byName = new Map(out.buckets.map(b => [b.name.trim().toLowerCase(), b.id]));
-  out.history = (Array.isArray(s.history) ? s.history : []).map(h => ({
-    id: h.id || uid(), t: +h.t || Date.now(), pay: +h.pay || 0, cur: h.cur || out.cur, freq: h.freq || out.freq,
-    parts: (h.parts || []).map(p => ({ id: p.id || byName.get(String(p.name).trim().toLowerCase()) || null, name: p.name, amt: +p.amt || 0, color: p.color }))
-  }));
+  // Splits made before the Transfer Run existed count as already banked.
+  out.history = (Array.isArray(s.history) ? s.history : []).map(h => {
+    const legacy = !h.status;
+    const parts = (h.parts || []).map(p => ({
+      id: p.id || byName.get(String(p.name).trim().toLowerCase()) || null, name: p.name, amt: +p.amt || 0, color: p.color,
+      auto: !!p.auto, done: legacy ? true : !!(p.done || p.auto)
+    }));
+    return {
+      id: h.id || uid(), t: +h.t || Date.now(), pay: +h.pay || 0, cur: h.cur || out.cur, freq: h.freq || out.freq, n: +h.n || 0,
+      parts, status: legacy ? 'banked' : (parts.every(p => p.done) ? 'banked' : 'pending'), bankedAt: h.bankedAt || null
+    };
+  });
+  // Serial numbers are fixed at cut time so deleting a split doesn't renumber the rest.
+  const n0 = out.history.length;
+  out.history.forEach((h, i) => { if (!h.n) h.n = n0 - i; });
   if (!FREQ[out.freq]) out.freq = 'monthly';
   if (!CUR[out.cur]) out.cur = '£';
   return out;
 }
+
+export let justReset = false;
 
 export function load() {
   try {
@@ -65,6 +83,7 @@ export function load() {
 }
 
 export const state = load();
+if (justReset) try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
 
 let saveT;
 export function save() {
@@ -83,6 +102,8 @@ export function resetState() { replaceState(defaults()); }
 
 export function exportJSON() { return JSON.stringify(state, null, 2); }
 
+export function resetProgress() { state.unlocked = {}; state.progressFrom = Date.now(); save(); }
+
 /* ---------- money ---------- */
 export function amountOf(b, pay) {
   return round2(Math.max(0, b.mode === 'pct' ? pay * b.value / 100 : b.value));
@@ -94,6 +115,19 @@ export function compute() {
   const rem = round2(pay - alloc);
   return { pay, rows, alloc, rem, over: rem < -0.004, done: pay > 0 && Math.abs(rem) < 0.005 };
 }
+/* ---------- transfer runs ---------- */
+export const pending = () => state.history.filter(h => h.status === 'pending');
+export function pendingLeft(h) { return h.parts.filter(p => !p.done).reduce((s, p) => s + p.amt, 0); }
+export function setPartDone(h, i, done) {
+  const p = h.parts[i]; if (!p || p.auto) return;
+  p.done = !!done;
+  const all = h.parts.every(x => x.done);
+  if (all && h.status !== 'banked') { h.status = 'banked'; h.bankedAt = Date.now(); }
+  else if (!all) { h.status = 'pending'; h.bankedAt = null; }
+  save();
+}
+export const nextSerialN = () => state.history.reduce((m, h) => Math.max(m, h.n || 0), 0) + 1;
+
 export function bucketTotal(id) {
   let t = 0;
   for (const h of state.history) if (h.cur === state.cur) for (const p of h.parts) if (p.id === id) t += p.amt;
