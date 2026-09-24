@@ -2,1024 +2,279 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0A0708">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Crimson Cut">
+<meta name="application-name" content="Crimson Cut">
+<meta name="format-detection" content="telephone=no">
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" sizes="180x180">
+
+<link rel="apple-touch-startup-image" href="icons/splash-1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash-1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+
+<link rel="preload" href="fonts/big-shoulders-display-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/fonts.css">
 <title>Crimson Cut</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
-<style>
-:root{
-  color-scheme:dark;
-  --black:#0A0708;
-  --ink:#110C0E;
-  --panel:#171113;
-  --panel-2:#211A1D;
-  --line:#2F2529;
-  --line-2:#46383E;
-  --text:#F4ECEE;
-  --muted:#9C8E93;
-  --dim:#6B5F64;
-  --crimson:#DC143C;
-  --crimson-hi:#FF3A5C;
-  --crimson-deep:#6B0A1E;
-  --display:"Big Shoulders Display","Oswald","Arial Narrow",Impact,sans-serif;
-  --body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --ease-out:cubic-bezier(.16,1,.3,1);
-  --spring:cubic-bezier(.34,1.56,.64,1);
-}
-*{box-sizing:border-box}
-html{background:var(--black)}
-body{margin:0;min-height:100%;background:var(--black);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-button,input,select{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:2px solid var(--crimson-hi);outline-offset:2px}
-[hidden]{display:none!important}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.tab{font-variant-numeric:tabular-nums}
-
-/* ---------- atmosphere ---------- */
-.bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.55;will-change:transform}
-.b1{width:55vmax;height:55vmax;left:-15vmax;top:-20vmax;background:radial-gradient(circle,#8E0B28 0%,transparent 65%);animation:drift1 26s ease-in-out infinite alternate}
-.b2{width:45vmax;height:45vmax;right:-15vmax;top:25vh;background:radial-gradient(circle,#5A0818 0%,transparent 65%);animation:drift2 32s ease-in-out infinite alternate}
-.b3{width:40vmax;height:40vmax;left:30vw;bottom:-25vmax;background:radial-gradient(circle,#3A2A30 0%,transparent 70%);animation:drift3 22s ease-in-out infinite alternate}
-@keyframes drift1{to{transform:translate(12vw,10vh) scale(1.15)}}
-@keyframes drift2{to{transform:translate(-14vw,-8vh) scale(.9)}}
-@keyframes drift3{to{transform:translate(-10vw,-12vh) scale(1.2)}}
-.grid-lines{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:56px 56px;-webkit-mask-image:radial-gradient(ellipse at 50% 20%,#000 20%,transparent 75%);mask-image:radial-gradient(ellipse at 50% 20%,#000 20%,transparent 75%)}
-.grain{position:absolute;inset:-50%;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain 1.2s steps(6) infinite}
-@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-4%)}60%{transform:translate(-4%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
-#fx{position:fixed;inset:0;width:100%;height:100%;z-index:40;pointer-events:none}
-
-/* ---------- layout ---------- */
-.wrap{position:relative;z-index:1;max-width:1220px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:22px 64px}
-.wrap.quake{animation:quake .45s cubic-bezier(.36,.07,.19,.97)}
-@keyframes quake{10%,90%{transform:translate(-1px,1px)}20%,80%{transform:translate(3px,-2px)}30%,50%,70%{transform:translate(-5px,2px)}40%,60%{transform:translate(5px,-1px)}}
-.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px}
-.brand{display:flex;align-items:center;gap:14px}
-.brand svg{width:44px;height:44px;flex:none;filter:drop-shadow(0 0 14px rgba(220,20,60,.55))}
-.brand .slash{animation:slash 5s var(--ease-out) infinite}
-@keyframes slash{0%,70%{stroke-dashoffset:0}78%{stroke-dashoffset:60}86%,100%{stroke-dashoffset:0}}
-.brand h1{margin:0;font-family:var(--display);font-weight:900;font-size:34px;line-height:.9;letter-spacing:.02em;text-transform:uppercase}
-.brand h1 span{color:var(--crimson);text-shadow:0 0 24px rgba(220,20,60,.6)}
-.brand p{margin:3px 0 0;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
-.top-ctl{display:flex;gap:8px;align-items:center}
-.sel select,.icon-btn{height:40px;border-radius:10px;border:1px solid var(--line);background:rgba(23,17,19,.8);backdrop-filter:blur(8px)}
-.sel select{padding:0 12px;font-family:var(--mono);font-size:14px;cursor:pointer}
-.icon-btn{width:40px;display:grid;place-items:center;transition:border-color .2s,background .2s,transform .2s var(--spring)}
-.icon-btn:hover{border-color:var(--crimson);transform:translateY(-1px)}
-.icon-btn:active{transform:scale(.92)}
-.icon-btn svg{width:18px;height:18px}
-.icon-btn[aria-pressed="false"] .on,.icon-btn[aria-pressed="true"] .off{display:none}
-
-.main{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:start}
-.panel{background:linear-gradient(180deg,rgba(33,26,29,.85),rgba(20,15,17,.85));border:1px solid var(--line);border-radius:22px;backdrop-filter:blur(14px);box-shadow:0 30px 80px -40px #000,inset 0 1px 0 rgba(255,255,255,.04)}
-.left{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);padding:24px;display:flex;flex-direction:column;gap:20px}
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
-
-/* rise-in on load */
-.rise{animation:rise .8s var(--ease-out) backwards}
-@keyframes rise{from{opacity:0;transform:translateY(18px)}}
-
-/* ---------- paycheck ---------- */
-.pay{display:flex;flex-direction:column;gap:6px}
-.pay-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.example{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--crimson-hi);border:1px solid rgba(220,20,60,.4);border-radius:99px;padding:3px 9px}
-.pay-input{display:flex;align-items:baseline;gap:4px;border-bottom:2px solid var(--line-2);padding-bottom:4px;transition:border-color .25s}
-.pay-input:focus-within{border-color:var(--crimson)}
-.pay-input span{font-family:var(--display);font-weight:800;font-size:44px;color:var(--crimson)}
-.pay-input input{width:100%;min-width:0;background:none;border:0;outline:0;font-family:var(--display);font-weight:900;font-size:clamp(54px,7vw,76px);line-height:1;letter-spacing:.01em;padding:0;caret-color:var(--crimson)}
-.pay-input.bump input{animation:bump .3s var(--spring)}
-@keyframes bump{40%{transform:scale(1.03);text-shadow:0 0 30px rgba(220,20,60,.6)}}
-.pay-input.nope{animation:nope .4s}
-@keyframes nope{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{border:1px solid var(--line);background:transparent;border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--muted);transition:all .2s var(--ease-out)}
-.chip:hover{color:var(--text);border-color:var(--line-2)}
-.chip[aria-pressed="true"]{background:var(--crimson);border-color:var(--crimson);color:#fff;box-shadow:0 0 20px -4px rgba(220,20,60,.7)}
-.chip:active{transform:scale(.94)}
-
-/* ---------- donut ---------- */
-.donut-wrap{position:relative;width:min(100%,330px);aspect-ratio:1;max-width:100%;margin:0 auto}
-.donut-wrap::before{content:"";position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle,rgba(220,20,60,.18),transparent 70%);animation:breathe 4s ease-in-out infinite}
-@keyframes breathe{50%{transform:scale(1.12);opacity:.6}}
-#donut{position:relative;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
-#donut .track{fill:none;stroke:rgba(255,255,255,.04);stroke-width:24}
-#donut .seg{fill:none;stroke-width:22;transition:stroke-width .25s var(--spring),filter .25s;cursor:pointer}
-#donut .seg.hl{stroke-width:30;filter:drop-shadow(0 0 8px currentColor)}
-#donut .ticks line{stroke:rgba(255,255,255,.12);stroke-width:1}
-body.over #donut .track{stroke:rgba(255,58,92,.25);animation:alarm 1s ease-in-out infinite}
-@keyframes alarm{50%{stroke:rgba(255,58,92,.05)}}
-.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;padding:22%}
-.donut-center strong{font-family:var(--display);font-weight:900;font-size:clamp(34px,4.6vw,48px);line-height:1;margin:6px 0 4px;transition:color .3s}
-.donut-center small{font-size:12px;color:var(--muted)}
-body.over .donut-center strong{color:var(--crimson-hi);text-shadow:0 0 24px rgba(255,58,92,.6)}
-body.done .donut-center strong{text-shadow:0 0 30px rgba(255,255,255,.35)}
-
-.meter{display:flex;flex-direction:column;gap:8px}
-.meter-top{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--muted)}
-.meter-top b{color:var(--text);font-weight:600}
-.bar{height:8px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
-.bar i{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--crimson-deep),var(--crimson),var(--crimson-hi));transition:width .6s var(--ease-out);box-shadow:0 0 16px rgba(220,20,60,.6)}
-.bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:sheen 2.4s linear infinite;transform:translateX(-100%)}
-@keyframes sheen{to{transform:translateX(100%)}}
-body.over .bar i{background:var(--crimson-hi);animation:alarmbar .8s ease-in-out infinite}
-@keyframes alarmbar{50%{opacity:.5}}
-
-.sweep{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px dashed var(--line-2);border-radius:14px;animation:rise .5s var(--ease-out)}
-.sweep p{margin:0;font-size:13px;color:var(--muted)}
-.sweep p b{color:var(--text)}
-.sweep .chip{display:inline-flex;align-items:center;gap:6px}
-.sweep .chip i{width:8px;height:8px;border-radius:50%;background:var(--c)}
-
-/* ---------- split button ---------- */
-.split{position:relative;overflow:hidden;width:100%;border:0;border-radius:16px;padding:16px 20px;background:linear-gradient(180deg,#E5183F,#A30E2D);color:#fff;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 14px 44px -12px rgba(220,20,60,.85),inset 0 1px 0 rgba(255,255,255,.28),inset 0 -2px 0 rgba(0,0,0,.25);transition:transform .2s var(--spring),box-shadow .2s,filter .2s;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.split::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);transform:translateX(-120%);animation:shine 3.2s ease-in-out infinite}
-@keyframes shine{60%,100%{transform:translateX(120%)}}
-.split .charge{position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.1),rgba(255,255,255,.35));transform-origin:left;transform:scaleX(var(--charge,0))}
-.split .lbl{position:relative;font-family:var(--display);font-weight:900;font-size:30px;letter-spacing:.08em;text-transform:uppercase;line-height:1}
-.split .sub{position:relative;font-family:var(--mono);font-size:11px;letter-spacing:.06em;opacity:.8}
-.split:hover{filter:brightness(1.08);transform:translateY(-2px)}
-.split.charging{transform:scale(.97)}
-.split.hot{animation:jitter .08s linear infinite}
-@keyframes jitter{25%{transform:scale(.97) translate(1px,-1px)}50%{transform:scale(.97) translate(-1px,1px)}75%{transform:scale(.97) translate(1px,1px)}}
-.split.nudge{animation:nope .4s}
-body.over .split,body.nopay .split{background:var(--panel-2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
-body.over .split::before,body.nopay .split::before{display:none}
-
-/* ---------- buckets ---------- */
-.right{display:flex;flex-direction:column;gap:14px}
-.sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.sec-head h2{margin:0;font-family:var(--display);font-weight:800;font-size:28px;text-transform:uppercase;letter-spacing:.04em;line-height:1}
-.sec-head h2 em{font-style:normal;color:var(--crimson)}
-.buckets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.bucket{--mx:50%;--my:50%;position:relative;overflow:hidden;padding:16px;border-radius:18px;border:1px solid var(--line);background:radial-gradient(420px circle at var(--mx) var(--my),rgba(220,20,60,.13),transparent 45%),linear-gradient(180deg,rgba(33,26,29,.9),rgba(20,15,17,.9));display:flex;flex-direction:column;gap:12px;transition:transform .35s var(--ease-out),border-color .25s,box-shadow .25s;transform-style:preserve-3d}
-.bucket::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c);box-shadow:0 0 18px var(--c);opacity:.9}
-.bucket:hover,.bucket.hl{border-color:var(--line-2);box-shadow:0 20px 50px -24px rgba(220,20,60,.5)}
-.bucket.enter{animation:cardIn .6s var(--ease-out) backwards}
-@keyframes cardIn{from{opacity:0;transform:translateY(22px) scale(.96)}}
-.bucket.leaving{animation:cardOut .32s ease-in forwards;pointer-events:none}
-@keyframes cardOut{to{opacity:0;transform:scale(.85) rotate(-2deg);filter:blur(4px)}}
-.bucket.zero{opacity:.62}
-.b-top{display:flex;align-items:center;gap:8px}
-.swatch{width:18px;height:18px;flex:none;border-radius:6px;border:0;background:var(--c);box-shadow:0 0 12px var(--c);transition:transform .25s var(--spring)}
-.swatch:hover{transform:rotate(45deg) scale(1.1)}
-.b-name{flex:1;min-width:0;background:none;border:0;outline:0;font-weight:700;font-size:15px;padding:4px 2px;border-bottom:1px solid transparent;transition:border-color .2s}
-.b-name:focus{border-color:var(--crimson)}
-.mode{display:flex;border:1px solid var(--line);border-radius:9px;padding:2px;flex:none}
-.mode button{border:0;background:none;width:28px;height:24px;border-radius:7px;font-family:var(--mono);font-size:12px;color:var(--muted);transition:all .2s}
-.mode button[aria-pressed="true"]{background:var(--text);color:var(--black);font-weight:600}
-.del{flex:none;width:28px;height:28px;border:0;border-radius:8px;background:none;color:var(--dim);display:grid;place-items:center;transition:all .2s}
-.del:hover{color:var(--crimson-hi);background:rgba(220,20,60,.12);transform:rotate(90deg)}
-.del svg{width:14px;height:14px}
-.b-mid{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
-.b-amt{font-family:var(--display);font-weight:800;font-size:36px;line-height:.95;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.b-val{display:flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:10px;padding:4px 8px;background:rgba(0,0,0,.25);font-family:var(--mono);font-size:13px;flex:none;transition:border-color .2s}
-.b-val:focus-within{border-color:var(--crimson)}
-.b-val input{width:64px;background:none;border:0;outline:0;text-align:right;font-family:var(--mono);font-size:13px;-moz-appearance:textfield}
-.b-val input::-webkit-inner-spin-button{-webkit-appearance:none}
-.b-val span{color:var(--muted)}
-.b-foot{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted)}
-.b-fill{position:absolute;inset:auto 0 0 0;height:0;background:linear-gradient(0deg,var(--c),transparent);opacity:0;pointer-events:none;mix-blend-mode:screen}
-.bucket.hit{animation:hit .7s var(--spring)}
-.bucket.hit .b-fill{animation:fill 1.1s var(--ease-out)}
-.bucket.hit .b-amt{animation:amtPop .7s var(--spring)}
-@keyframes hit{30%{transform:scale(1.035);border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 0 50px -6px var(--c)}}
-@keyframes fill{0%{height:0;opacity:.0}25%{height:100%;opacity:.35}100%{height:100%;opacity:0}}
-@keyframes amtPop{30%{transform:scale(1.12);text-shadow:0 0 22px var(--c)}}
-
-/* custom range */
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;margin:0}
-input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:linear-gradient(90deg,var(--c) 0,var(--c) var(--p,0%),rgba(255,255,255,.08) var(--p,0%))}
-input[type=range]::-moz-range-track{height:6px;border-radius:99px;background:rgba(255,255,255,.08)}
-input[type=range]::-moz-range-progress{height:6px;border-radius:99px;background:var(--c)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;margin-top:-7px;border-radius:50%;background:#fff;border:4px solid var(--c);box-shadow:0 0 0 0 var(--c),0 4px 12px rgba(0,0,0,.5);transition:transform .2s var(--spring),box-shadow .2s}
-input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:4px solid var(--c);box-shadow:0 4px 12px rgba(0,0,0,.5)}
-input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
-input[type=range]:active::-webkit-slider-thumb{transform:scale(1.3);box-shadow:0 0 0 8px rgba(220,20,60,.18),0 0 20px var(--c)}
-
-.add{border:1.5px dashed var(--line-2);background:transparent;border-radius:18px;padding:16px;font-weight:700;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:8px;transition:all .25s var(--ease-out)}
-.add:hover{border-color:var(--crimson);color:var(--text);background:rgba(220,20,60,.06);transform:translateY(-2px)}
-.add:active{transform:scale(.98)}
-.add svg{width:16px;height:16px;transition:transform .3s var(--spring)}
-.add:hover svg{transform:rotate(90deg)}
-
-/* ---------- vault ---------- */
-.vault{margin-top:24px;padding:24px;display:flex;flex-direction:column;gap:18px}
-.vault-meta{font-family:var(--mono);font-size:12px;color:var(--muted)}
-.vault-meta b{color:var(--text);font-weight:600}
-.ghost{border:1px solid var(--line);background:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--muted);transition:all .2s}
-.ghost:hover{color:var(--text);border-color:var(--line-2)}
-.ghost.armed{color:#fff;background:var(--crimson);border-color:var(--crimson)}
-.vault-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
-.vault h3{margin:0 0 12px;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:400}
-.vbars{display:flex;flex-direction:column;gap:12px}
-.vbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:baseline}
-.vbar span{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vbar b{font-family:var(--display);font-weight:800;font-size:22px}
-.vbar .bar{grid-column:1/-1;height:6px}
-.vbar .bar i{background:var(--c);box-shadow:0 0 12px var(--c)}
-.vbar .bar i::after{display:none}
-.history{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:360px;overflow:auto}
-.h-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2)}
-.h-item.new{animation:slideIn .6s var(--ease-out)}
-@keyframes slideIn{from{opacity:0;transform:translateX(-20px);background:rgba(220,20,60,.25)}}
-.h-item time{font-family:var(--mono);font-size:12px;color:var(--muted)}
-.h-item b{font-family:var(--display);font-weight:800;font-size:22px}
-.h-item .stack{grid-column:1/-1;display:flex;height:5px;border-radius:99px;overflow:hidden;gap:2px}
-.h-item .stack i{background:var(--c);min-width:2px}
-.h-item .del{width:24px;height:24px}
-.empty{color:var(--muted);font-size:14px;padding:18px;border:1px dashed var(--line);border-radius:14px;text-align:center}
-footer{margin-top:28px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
-
-/* ---------- stamp + toast ---------- */
-.stamp{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:radial-gradient(circle,rgba(10,7,8,.55),rgba(10,7,8,.85));backdrop-filter:blur(3px);cursor:pointer;animation:fadeIn .25s ease-out}
-.stamp.out{animation:fadeOut .4s ease-in forwards}
-@keyframes fadeIn{from{opacity:0}}
-@keyframes fadeOut{to{opacity:0}}
-.stamp-inner{text-align:center;padding:16px;animation:slam .55s var(--spring)}
-@keyframes slam{0%{transform:scale(2.6) rotate(-8deg);opacity:0;filter:blur(8px)}60%{opacity:1;filter:blur(0)}100%{transform:scale(1) rotate(-4deg)}}
-.stamp h2{margin:0;font-family:var(--display);font-weight:900;font-size:clamp(84px,18vw,180px);line-height:.85;text-transform:uppercase;color:var(--crimson);-webkit-text-stroke:2px var(--crimson-hi);text-shadow:0 0 60px rgba(220,20,60,.7),0 0 140px rgba(220,20,60,.4)}
-.stamp p{margin:14px 0 0;font-family:var(--mono);font-size:14px;letter-spacing:.08em;color:var(--text)}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:60;transform:translate(-50%,30px);opacity:0;padding:12px 18px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line-2);font-weight:600;font-size:14px;box-shadow:0 20px 40px -10px #000;transition:all .35s var(--ease-out);pointer-events:none;max-width:calc(100% - 32px)}
-.toast.show{transform:translate(-50%,0);opacity:1}
-
-/* ---------- responsive ---------- */
-@media (max-width:960px){
-  .main{grid-template-columns:minmax(0,1fr)}
-  .left{position:relative;top:0}
-  .vault-grid{grid-template-columns:minmax(0,1fr)}
-}
-@media (max-width:640px){
-  .buckets{grid-template-columns:minmax(0,1fr)}
-  .wrap{padding-bottom:130px}
-  .splitbar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,transparent,rgba(10,7,8,.92) 35%)}
-  .toast{bottom:calc(120px + env(safe-area-inset-bottom,0px))}
-  .brand h1{font-size:24px}
-  .brand svg{width:34px;height:34px}
-  .brand{gap:10px;min-width:0}
-  .brand p{font-size:9px;letter-spacing:.14em}
-  .left,.vault{padding:18px}
-}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
-}
-</style>
+<meta name="description" content="Carve every paycheck into buckets with a blade.">
+<link rel="stylesheet" href="css/app.css">
 </head>
-<body>
-<div class="bg" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><div class="grid-lines"></div><div class="grain"></div></div>
+<body class="booting">
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="bg-fallback" aria-hidden="true"></div>
 <canvas id="fx" aria-hidden="true"></canvas>
 
-<div class="wrap" id="wrap">
-  <header class="top rise">
-    <div class="brand">
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <circle cx="24" cy="24" r="19" fill="none" stroke="#DC143C" stroke-width="4"/>
-        <circle cx="24" cy="24" r="10" fill="#DC143C"/>
-        <path class="slash" d="M6 42 L42 6" stroke="#0A0708" stroke-width="5" stroke-dasharray="60" stroke-linecap="round"/>
-        <path d="M6 42 L42 6" stroke="#F4ECEE" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
-      </svg>
-      <div><h1>Crimson<span>Cut</span></h1><p>Paycheck splitter</p></div>
+<!-- boot splash -->
+<div id="boot" class="boot" aria-hidden="true">
+  <svg class="boot-logo" viewBox="0 0 48 48">
+    <circle class="ring" cx="24" cy="24" r="19" fill="none" stroke="#DC143C" stroke-width="4"/>
+    <circle class="core" cx="24" cy="24" r="10" fill="#DC143C"/>
+    <path class="cut" d="M4 44 L44 4" stroke="#0A0708" stroke-width="5" stroke-linecap="round"/>
+    <path class="edge" d="M4 44 L44 4" stroke="#F4ECEE" stroke-width="1.2" stroke-linecap="round"/>
+  </svg>
+  <div class="boot-word"><span>Crimson</span><span>Cut</span></div>
+</div>
+
+<div class="app" id="app">
+  <header class="hdr">
+    <div class="hdr-brand" aria-label="Crimson Cut">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke="#DC143C" stroke-width="4"/><circle cx="24" cy="24" r="10" fill="#DC143C"/><path d="M6 42 L42 6" stroke="#0A0708" stroke-width="5" stroke-linecap="round"/><path d="M6 42 L42 6" stroke="#F4ECEE" stroke-width="1.2" stroke-linecap="round" opacity=".7"/></svg>
+      <span class="hdr-word">Crimson<b>Cut</b></span>
     </div>
-    <div class="top-ctl">
-      <label class="sel"><span class="sr">Currency</span>
-        <select id="currency"><option value="£">£ GBP</option><option value="$">$ USD</option><option value="€">€ EUR</option></select>
-      </label>
-      <button id="soundBtn" class="icon-btn" aria-pressed="true" aria-label="Sound">
-        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>
-        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6M16 9l6 6"/></svg>
-      </button>
-    </div>
+    <button class="rank-pill" id="rankPill" aria-label="Your rank">
+      <svg viewBox="0 0 36 36" class="rank-ring"><circle cx="18" cy="18" r="15" class="rr-track"/><circle cx="18" cy="18" r="15" class="rr-fill" id="rankRing"/></svg>
+      <span class="rank-lvl tab" id="rankLvl">1</span>
+      <span class="rank-name" id="rankName">Skint</span>
+    </button>
+    <button class="payday-pill" id="paydayPill"><span id="paydayTxt">Set payday</span></button>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
   </header>
 
-  <main class="main">
-    <section class="left panel rise" style="animation-delay:.08s" aria-label="Paycheck">
-      <div class="pay">
-        <div class="pay-row"><label for="pay" class="eyebrow">This paycheck</label><span class="example" id="exampleTag">Example numbers</span></div>
-        <div class="pay-input" id="payWrap"><span id="paySym">£</span><input id="pay" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Paycheck amount"></div>
-        <div class="chips" id="freq" role="group" aria-label="Pay frequency">
-          <button class="chip" data-freq="weekly">Weekly</button>
-          <button class="chip" data-freq="fortnightly">Fortnightly</button>
-          <button class="chip" data-freq="monthly">Monthly</button>
+  <main class="views">
+    <!-- ================= SPLIT ================= -->
+    <section class="view" id="view-split" data-view="split">
+      <div class="split-grid">
+        <div class="col-a">
+          <button class="note" id="note" aria-label="Edit paycheck amount">
+            <span class="note-guilloche" aria-hidden="true"></span>
+            <span class="note-holo" aria-hidden="true"></span>
+            <span class="note-top"><span class="note-label">This paycheck</span><span class="note-serial tab" id="noteSerial">CC-0001</span></span>
+            <span class="note-amt"><span class="note-sym" id="noteSym">£</span><span class="odo" id="payOdo"></span></span>
+            <span class="note-bottom"><span class="micro">Crimson Cut · Legal tender for your own bullshit</span><span class="note-edit">Tap to edit</span></span>
+            <span class="example-tag" id="exampleTag">Example numbers</span>
+          </button>
+          <div class="chips freq" id="freq" role="group" aria-label="Pay frequency">
+            <button class="chip" data-freq="weekly">Weekly</button>
+            <button class="chip" data-freq="fortnightly">Fortnightly</button>
+            <button class="chip" data-freq="monthly">Monthly</button>
+          </div>
+
+          <div class="alloc glass">
+            <div class="donut-wrap">
+              <svg id="donut" viewBox="0 0 200 200" aria-hidden="true">
+                <defs>
+                  <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#231B1E"/><rect width="2" height="5" fill="#46383E"/></pattern>
+                </defs>
+                <g class="ticks" id="ticks"></g>
+                <circle class="track" cx="100" cy="100" r="80"/>
+                <g id="segs"></g>
+              </svg>
+              <div class="donut-center" aria-live="polite">
+                <span class="eyebrow" id="cLabel">Left to assign</span>
+                <strong class="odo odo-mid" id="cOdo"></strong>
+                <small id="cSub"></small>
+              </div>
+            </div>
+            <div class="meter">
+              <div class="meter-top tab"><span><b id="mPct">0%</b> assigned</span><span id="mAlloc"></span></div>
+              <div class="bar"><i id="mBar"></i></div>
+            </div>
+            <div class="sweep" id="sweep" hidden>
+              <p>Sweep the <b id="sweepAmt"></b> leftover into</p>
+              <div class="chips" id="sweepChips"></div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="donut-wrap">
-        <svg id="donut" viewBox="0 0 200 200" aria-hidden="true">
-          <defs>
-            <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <rect width="5" height="5" fill="#231B1E"/><rect width="2" height="5" fill="#46383E"/>
-            </pattern>
-          </defs>
-          <g class="ticks" id="ticks"></g>
-          <circle class="track" cx="100" cy="100" r="80"/>
-          <g id="segs"></g>
-        </svg>
-        <div class="donut-center" aria-live="polite">
-          <span class="eyebrow" id="cLabel">Left to assign</span>
-          <strong class="tab" id="cAmt">£0.00</strong>
-          <small id="cSub"></small>
+        <div class="col-b">
+          <div class="sec-head">
+            <h2>Your <em>buckets</em></h2>
+            <div class="chips" id="presets">
+              <button class="chip sm" data-preset="503020">50/30/20</button>
+              <button class="chip sm" data-preset="saver">Saver</button>
+              <button class="chip sm" data-preset="even">Even</button>
+            </div>
+          </div>
+          <div class="buckets" id="buckets"></div>
+          <button class="add" id="addBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add bucket</button>
         </div>
-      </div>
-
-      <div class="meter">
-        <div class="meter-top"><span><b id="mPct">0%</b> assigned</span><span id="mAlloc"></span></div>
-        <div class="bar"><i id="mBar"></i></div>
-      </div>
-
-      <div class="sweep" id="sweep" hidden>
-        <p>Sweep the <b id="sweepAmt"></b> leftover into:</p>
-        <div class="chips" id="sweepChips"></div>
-      </div>
-
-      <div class="splitbar">
-        <button id="splitBtn" class="split" aria-describedby="splitSub">
-          <span class="charge"></span>
-          <span class="lbl" id="splitLbl">Hold to split</span>
-          <span class="sub tab" id="splitSub"></span>
-        </button>
       </div>
     </section>
 
-    <section class="right rise" style="animation-delay:.16s" aria-label="Buckets">
-      <div class="sec-head">
-        <h2>Your <em>buckets</em></h2>
-        <div class="chips" id="presets">
-          <button class="chip" data-preset="50/30/20">50 / 30 / 20</button>
-          <button class="chip" data-preset="Saver">Saver</button>
-          <button class="chip" data-preset="Even">Even four</button>
+    <!-- ================= VAULT ================= -->
+    <section class="view" id="view-vault" data-view="vault" hidden>
+      <div class="vault-hero glass">
+        <span class="eyebrow">All-time paid in</span>
+        <strong class="odo odo-big" id="vPaid"></strong>
+        <div class="vault-stats">
+          <div><span class="eyebrow">Saved</span><b class="odo" id="vSaved"></b></div>
+          <div><span class="eyebrow">Splits</span><b class="odo" id="vSplits"></b></div>
+          <div><span class="eyebrow">Streak</span><b class="odo" id="vStreak"></b></div>
         </div>
       </div>
-      <div class="buckets" id="buckets"></div>
-      <button class="add" id="addBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add bucket</button>
+      <div class="glass pad">
+        <div class="sec-head"><h3>Last splits</h3><span class="eyebrow" id="chartMeta"></span></div>
+        <div class="chart" id="chart"></div>
+      </div>
+      <div class="glass pad">
+        <div class="sec-head"><h3>By bucket</h3></div>
+        <div class="vbars" id="vbars"></div>
+      </div>
+      <div class="glass pad">
+        <div class="sec-head"><h3>History</h3><button class="ghost" id="clearBtn">Clear</button></div>
+        <ol class="history" id="history"></ol>
+      </div>
+    </section>
+
+    <!-- ================= RANKS ================= -->
+    <section class="view" id="view-ranks" data-view="ranks" hidden>
+      <div class="rank-hero glass">
+        <div class="rank-badge" id="rankBadge"><span class="tab" id="rbLvl">1</span></div>
+        <span class="eyebrow">Current rank</span>
+        <h2 class="rank-title" id="rankTitle">Skint</h2>
+        <div class="xpbar"><i id="xpFill"></i></div>
+        <div class="xp-meta tab"><span id="xpNow"></span><span id="xpNext"></span></div>
+      </div>
+      <div class="glass pad">
+        <div class="sec-head"><h3>Achievements</h3><span class="eyebrow" id="achCount"></span></div>
+        <div class="ach-grid" id="achGrid"></div>
+      </div>
+      <div class="glass pad">
+        <div class="sec-head"><h3>The ladder</h3></div>
+        <ol class="ladder" id="ladder"></ol>
+      </div>
     </section>
   </main>
 
-  <section class="vault panel rise" style="animation-delay:.24s" aria-label="The Vault">
-    <div class="sec-head">
-      <h2>The <em>vault</em></h2>
-      <span class="vault-meta" id="vaultMeta"></span>
-      <button class="ghost" id="clearBtn">Clear history</button>
+  <!-- swipe to cut -->
+  <div class="cutbar" id="cutbar">
+    <div class="cut-track" id="cutTrack" role="slider" tabindex="0" aria-label="Swipe to split your paycheck" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span class="cut-fill" id="cutFill"></span>
+      <span class="cut-text"><b id="cutLbl">Swipe to cut</b><small class="tab" id="cutSub"></small></span>
+      <span class="cut-chev" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="cut-knob" id="cutKnob" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M3 21 L17 7 L21 3 L19 9 L6 22 Z" fill="#fff"/><path d="M3 21 L6 22" stroke="#DC143C" stroke-width="2"/></svg>
+      </span>
     </div>
-    <div class="vault-grid">
-      <div><h3>All-time by bucket</h3><div class="vbars" id="vbars"></div></div>
-      <div><h3>Past splits</h3><ol class="history" id="history"></ol></div>
-    </div>
-  </section>
-  <footer>Everything saves in this browser only</footer>
+  </div>
+
+  <nav class="tabbar" id="tabbar" aria-label="Sections">
+    <button data-tab="split" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M4 20 20 4"/></svg><span>Split</span></button>
+    <button data-tab="vault"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 8v1M12 15v1M8 12h1M15 12h1"/></svg><span>Vault</span></button>
+    <button data-tab="ranks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg><span>Ranks</span><i class="tab-dot" id="ranksDot" hidden></i></button>
+  </nav>
 </div>
 
-<div class="stamp" id="stamp" hidden><div class="stamp-inner"><h2>Split.</h2><p class="tab" id="stampSub"></p></div></div>
+<!-- sheets -->
+<div class="scrim" id="scrim" hidden></div>
+
+<div class="sheet" id="keypad" hidden role="dialog" aria-label="Paycheck amount">
+  <div class="grab"></div>
+  <span class="eyebrow">What landed this time</span>
+  <div class="kp-display"><span id="kpSym">£</span><span class="kp-val tab" id="kpVal">0</span><i class="kp-caret"></i></div>
+  <div class="kp-quick chips" id="kpQuick"></div>
+  <div class="kp-grid" id="kpGrid">
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button data-k=".">.</button><button data-k="0">0</button>
+    <button data-k="back" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-7 7 7 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1zM17 9l-6 6M11 9l6 6"/></svg></button>
+  </div>
+  <button class="btn-primary" id="kpDone">Lock it in</button>
+</div>
+
+<div class="sheet" id="bucketSheet" hidden role="dialog" aria-label="Bucket settings">
+  <div class="grab"></div>
+  <div class="bs-head"><i class="bs-sw" id="bsSw"></i><input id="bsName" maxlength="28" aria-label="Bucket name"></div>
+  <span class="eyebrow">Colour</span>
+  <div class="swatches" id="bsColors"></div>
+  <span class="eyebrow">Goal (optional)</span>
+  <label class="field"><span id="bsCur">£</span><input id="bsGoal" type="text" inputmode="decimal" placeholder="No goal"></label>
+  <p class="hint" id="bsProgress"></p>
+  <div class="bs-actions">
+    <button class="ghost danger" id="bsDelete">Delete bucket</button>
+    <button class="btn-primary" id="bsDone">Done</button>
+  </div>
+</div>
+
+<div class="sheet tall" id="settings" hidden role="dialog" aria-label="Settings">
+  <div class="grab"></div>
+  <h2 class="sheet-title">Settings</h2>
+  <div class="set-list">
+    <label class="set-row"><span><b>Sound</b><small>Works with the silent switch on</small></span><input type="checkbox" class="tgl" id="setSound"></label>
+    <label class="set-row"><span><b>Haptics</b><small>Taps and thumps on iPhone</small></span><input type="checkbox" class="tgl" id="setHaptics"></label>
+    <label class="set-row"><span><b>Tilt effects</b><small>Move your phone, the note catches the light</small></span><input type="checkbox" class="tgl" id="setMotion"></label>
+    <label class="set-row"><span><b>Currency</b></span><select id="setCur"><option value="£">£ GBP</option><option value="$">$ USD</option><option value="€">€ EUR</option></select></label>
+    <label class="set-row"><span><b>Next payday</b><small>Countdown up top. Rolls forward on its own</small></span><input type="date" id="setPayday"></label>
+  </div>
+  <div class="set-group">
+    <span class="eyebrow">Backup</span>
+    <p class="hint">Your data lives on this phone only. Export now and then so a wiped phone doesn't wipe your history.</p>
+    <div class="set-btns">
+      <button class="ghost" id="exportBtn">Export backup</button>
+      <label class="ghost file-btn">Import backup<input type="file" id="importFile" accept="application/json,.json"></label>
+      <button class="ghost danger" id="resetBtn">Reset everything</button>
+    </div>
+  </div>
+  <div class="set-group" id="installHint" hidden>
+    <span class="eyebrow">Put it on your home screen</span>
+    <p class="hint">In Safari tap <b>Share</b>, then <b>Add to Home Screen</b>. It opens full screen like a real app and works offline.</p>
+  </div>
+  <button class="btn-primary" id="setDone">Done</button>
+  <p class="ver">Crimson Cut v2</p>
+</div>
+
+<!-- cutscene stage -->
+<div class="stage" id="stage" hidden>
+  <div class="stage-note" id="stageNote"></div>
+  <div class="stage-tiles" id="stageTiles"></div>
+  <div class="stamp" id="stamp" hidden>
+    <h2>Cut.</h2>
+    <p class="tab" id="stampSub"></p>
+    <div class="stamp-xp" id="stampXp"></div>
+    <button class="btn-primary" id="stampDone">Bank it</button>
+  </div>
+</div>
+
+<div class="rankup" id="rankup" hidden>
+  <span class="eyebrow">Rank up</span>
+  <div class="ru-from" id="ruFrom"></div>
+  <div class="ru-arrow">↓</div>
+  <h2 id="ruTo"></h2>
+  <button class="btn-primary" id="ruDone">Fuck yes</button>
+</div>
+
+<div class="banners" id="banners" aria-live="polite"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script>
-(() => {
-'use strict';
-const $ = s => document.querySelector(s);
-const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const finePointer = matchMedia('(pointer: fine)').matches;
-const KEY = 'crimson-cut-v1';
-const CUR = { '£': 'GBP', '$': 'USD', '€': 'EUR' };
-const FREQ = { weekly: 52, fortnightly: 26, monthly: 12 };
-const SHADES = ['#DC143C', '#FF3A5C', '#B8AEB2', '#9E0F2E', '#FF8095', '#6E6468', '#E8E0E2', '#5E0B1D'];
-const HOLD_MS = 750;
-const uid = () => Math.random().toString(36).slice(2, 9);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const round2 = n => Math.round(n * 100) / 100;
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
-/* ---------------- state ---------------- */
-function defaults() {
-  return {
-    pay: 2400, freq: 'monthly', cur: '£', sound: true, touched: false, history: [],
-    buckets: [
-      { id: uid(), name: 'Rent & bills', mode: 'fixed', value: 950, color: '#DC143C' },
-      { id: uid(), name: 'Savings', mode: 'pct', value: 20, color: '#FF3A5C' },
-      { id: uid(), name: 'Investing', mode: 'pct', value: 10, color: '#B8AEB2' },
-      { id: uid(), name: 'Groceries', mode: 'pct', value: 12, color: '#9E0F2E' },
-      { id: uid(), name: 'Fun money', mode: 'pct', value: 10, color: '#FF8095' },
-      { id: uid(), name: 'Emergency fund', mode: 'pct', value: 5, color: '#6E6468' }
-    ]
-  };
-}
-function load() {
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.buckets)) return Object.assign(defaults(), s); } catch (e) {}
-  return null;
-}
-let saveT;
-function save() {
-  clearTimeout(saveT);
-  saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }, 200);
-}
-let state = load() || defaults();
-function touch() { if (!state.touched) { state.touched = true; $('#exampleTag').hidden = true; } save(); }
-
-/* ---------------- formatting ---------------- */
-let nf, nf0;
-function mkNF() {
-  nf = new Intl.NumberFormat('en-GB', { style: 'currency', currency: CUR[state.cur], minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  nf0 = new Intl.NumberFormat('en-GB', { style: 'currency', currency: CUR[state.cur], maximumFractionDigits: 0 });
-}
-const fmt = n => nf.format(n);
-const fmt0 = n => nf0.format(n);
-mkNF();
-const parseNum = s => { const v = parseFloat(String(s).replace(/[^0-9.]/g, '')); return isFinite(v) ? v : 0; };
-
-function compute() {
-  const pay = Math.max(0, +state.pay || 0);
-  const rows = state.buckets.map(b => ({ b, amt: round2(Math.max(0, b.mode === 'pct' ? pay * b.value / 100 : b.value)) }));
-  const alloc = round2(rows.reduce((s, r) => s + r.amt, 0));
-  return { pay, rows, alloc, rem: round2(pay - alloc) };
-}
-
-/* ---------------- tweened numbers ---------------- */
-function counter(el, format, start = 0) {
-  let cur = start, from = start, target = start, t0 = 0, raf = 0;
-  const dur = 650;
-  el.textContent = format(cur);
-  function step(t) {
-    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 4);
-    cur = from + (target - from) * e;
-    el.textContent = format(cur);
-    raf = p < 1 ? requestAnimationFrame(step) : 0;
-  }
-  return {
-    set(v, opts = {}) {
-      if (opts.from != null) cur = opts.from;
-      target = v;
-      if (reduce || opts.instant) { cur = v; el.textContent = format(v); return; }
-      from = cur; t0 = performance.now();
-      if (!raf) raf = requestAnimationFrame(step);
-    },
-    get value() { return target; }
-  };
-}
-
-/* ---------------- sound ---------------- */
-const Snd = {
-  ctx: null, master: null, last: 0, chargeOsc: null, chargeGain: null,
-  init() {
-    if (!this.ctx) {
-      try {
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        this.master = this.ctx.createGain(); this.master.gain.value = .55; this.master.connect(this.ctx.destination);
-      } catch (e) { this.ctx = null; }
-    }
-    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
-  },
-  ok() { return state.sound && this.ctx && this.ctx.state === 'running'; },
-  tone(freq, dur = .08, type = 'sine', vol = .08, when = 0, slideTo) {
-    if (!this.ok()) return;
-    const t = this.ctx.currentTime + when, o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.type = type; o.frequency.setValueAtTime(freq, t);
-    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + .02);
-  },
-  tick(v = .5) {
-    const now = performance.now(); if (now - this.last < 32) return; this.last = now;
-    this.tone(500 + v * 900, .035, 'triangle', .05);
-  },
-  click() { this.tone(1200, .03, 'square', .02); },
-  coin(i) { const f = 660 * Math.pow(2, (i * 2) / 12); this.tone(f, .12, 'triangle', .09); this.tone(f * 1.5, .22, 'sine', .06, .06); },
-  pop() { this.tone(300, .12, 'sine', .1, 0, 90); },
-  whoosh() {
-    if (!this.ok()) return;
-    const len = .6, buf = this.ctx.createBuffer(1, this.ctx.sampleRate * len, this.ctx.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-    const src = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain(), t = this.ctx.currentTime;
-    src.buffer = buf; f.type = 'bandpass'; f.Q.value = 1.2;
-    f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(3500, t + len);
-    g.gain.value = .22; src.connect(f); f.connect(g); g.connect(this.master); src.start(t);
-  },
-  thump() { this.tone(120, .35, 'sine', .35, 0, 40); this.tone(60, .5, 'sine', .25); },
-  chord() { [0, 4, 7, 12, 16].forEach((s, i) => this.tone(440 * Math.pow(2, s / 12), 1.2, i % 2 ? 'sine' : 'triangle', .06, i * .045)); },
-  chargeStart() {
-    if (!this.ok()) return;
-    const t = this.ctx.currentTime;
-    this.chargeOsc = this.ctx.createOscillator(); this.chargeGain = this.ctx.createGain();
-    this.chargeOsc.type = 'sawtooth'; this.chargeOsc.frequency.setValueAtTime(90, t);
-    this.chargeOsc.frequency.exponentialRampToValueAtTime(520, t + HOLD_MS / 1000);
-    const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400;
-    this.chargeGain.gain.setValueAtTime(0, t); this.chargeGain.gain.linearRampToValueAtTime(.07, t + .1);
-    this.chargeOsc.connect(lp); lp.connect(this.chargeGain); this.chargeGain.connect(this.master); this.chargeOsc.start(t);
-  },
-  chargeStop() {
-    if (!this.chargeOsc) return;
-    const t = this.ctx.currentTime;
-    this.chargeGain.gain.cancelScheduledValues(t); this.chargeGain.gain.setTargetAtTime(0, t, .03);
-    this.chargeOsc.stop(t + .15); this.chargeOsc = null;
-  }
-};
-const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
-addEventListener('pointerdown', () => Snd.init(), { capture: true });
-addEventListener('keydown', () => Snd.init(), { capture: true });
-
-/* ---------------- toast ---------------- */
-let toastT;
-function toast(msg) {
-  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600);
-}
-
-/* ---------------- donut ---------------- */
-const R = 80, CIRC = 2 * Math.PI * R;
-const segs = new Map();
-let segOrder = [], donutRaf = 0;
-(function drawTicks() {
-  const g = $('#ticks'); let h = '';
-  for (let i = 0; i < 60; i++) {
-    const a = i / 60 * Math.PI * 2, r1 = 97, r2 = i % 5 ? 94 : 91;
-    h += `<line x1="${100 + Math.cos(a) * r1}" y1="${100 + Math.sin(a) * r1}" x2="${100 + Math.cos(a) * r2}" y2="${100 + Math.sin(a) * r2}"/>`;
-  }
-  g.innerHTML = h;
-})();
-function setDonut(c) {
-  const total = Math.max(c.pay, c.alloc) || 1;
-  const wanted = c.rows.map(r => ({ id: r.b.id, v: r.amt / total, color: r.b.color }));
-  wanted.push({ id: '_rem', v: Math.max(0, c.rem) / total, color: 'url(#hatch)' });
-  const ids = new Set(wanted.map(w => w.id));
-  const host = $('#segs');
-  wanted.forEach(w => {
-    let s = segs.get(w.id);
-    if (!s) {
-      const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      el.setAttribute('cx', 100); el.setAttribute('cy', 100); el.setAttribute('r', R); el.setAttribute('class', 'seg');
-      el.setAttribute('stroke-dasharray', `0 ${CIRC}`); el.dataset.id = w.id;
-      host.appendChild(el);
-      s = { el, cur: 0, target: 0, dying: false };
-      segs.set(w.id, s);
-    }
-    s.target = w.v; s.dying = false;
-    s.el.setAttribute('stroke', w.color); s.el.style.color = w.color;
-  });
-  segs.forEach((s, id) => { if (!ids.has(id)) { s.target = 0; s.dying = true; } });
-  segOrder = [...wanted.map(w => w.id), ...[...segs.keys()].filter(id => !ids.has(id))];
-  if (!donutRaf) donutRaf = requestAnimationFrame(donutFrame);
-}
-function donutFrame() {
-  let acc = 0, moving = false;
-  for (const id of segOrder) {
-    const s = segs.get(id); if (!s) continue;
-    const d = s.target - s.cur;
-    if (Math.abs(d) > .0004 && !reduce) { s.cur += d * .14; moving = true; } else s.cur = s.target;
-    const len = s.cur * CIRC, gap = len > 4 ? 1.8 : 0;
-    s.el.setAttribute('stroke-dasharray', `${Math.max(0, len - gap)} ${CIRC}`);
-    s.el.setAttribute('stroke-dashoffset', -acc * CIRC);
-    acc += s.cur;
-    if (s.dying && s.cur === 0) { s.el.remove(); segs.delete(id); }
-  }
-  donutRaf = moving ? requestAnimationFrame(donutFrame) : 0;
-}
-$('#segs').addEventListener('pointerover', e => { const id = e.target.dataset && e.target.dataset.id; highlight(id, true); });
-$('#segs').addEventListener('pointerout', e => { const id = e.target.dataset && e.target.dataset.id; highlight(id, false); });
-function highlight(id, on) {
-  if (!id) return;
-  const s = segs.get(id); if (s) s.el.classList.toggle('hl', on);
-  const card = cardOf(id); if (card) card.classList.toggle('hl', on);
-}
-
-/* ---------------- buckets ---------------- */
-const list = $('#buckets');
-const amtCounters = new Map();
-const lastAmt = new Map();
-let seen = new Set();
-const cardOf = id => list.querySelector(`.bucket[data-id="${id}"]`);
-const showVal = v => String(+(+v).toFixed(2));
-
-function rangeMax(b, pay) { return b.mode === 'pct' ? 100 : Math.max(100, Math.ceil(pay), Math.ceil(b.value)); }
-
-function cardEl(b, pay) {
-  const el = document.createElement('article');
-  el.className = 'bucket'; el.dataset.id = b.id; el.style.setProperty('--c', b.color);
-  const pct = b.mode === 'pct';
-  el.innerHTML = `
-    <div class="b-top">
-      <button class="swatch" aria-label="Change colour of ${esc(b.name)}"></button>
-      <input class="b-name" id="name-${b.id}" value="${esc(b.name)}" maxlength="28" aria-label="Bucket name">
-      <div class="mode" role="group" aria-label="Split by">
-        <button data-mode="pct" aria-pressed="${pct}" aria-label="Percent of pay">%</button>
-        <button data-mode="fixed" aria-pressed="${!pct}" aria-label="Fixed amount">${esc(state.cur)}</button>
-      </div>
-      <button class="del" aria-label="Delete ${esc(b.name)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-    </div>
-    <div class="b-mid">
-      <output class="b-amt tab" aria-live="off"></output>
-      <label class="b-val"><span>${pct ? '' : esc(state.cur)}</span><input class="b-num tab" id="num-${b.id}" type="number" inputmode="decimal" min="0" step="${pct ? .5 : 1}" value="${showVal(b.value)}" aria-label="${pct ? 'Percent' : 'Amount'} for ${esc(b.name)}"><span>${pct ? '%' : ''}</span></label>
-    </div>
-    <input class="b-range" id="rng-${b.id}" type="range" min="0" max="${rangeMax(b, pay)}" step="${pct ? .5 : 5}" value="${b.value}" aria-label="${esc(b.name)} slider">
-    <div class="b-foot tab"><span class="b-share"></span><span class="b-year"></span></div>
-    <div class="b-fill"></div>`;
-  return el;
-}
-
-function renderBuckets() {
-  const pay = compute().pay;
-  list.innerHTML = '';
-  amtCounters.clear();
-  let n = 0;
-  state.buckets.forEach(b => {
-    const el = cardEl(b, pay);
-    if (!seen.has(b.id)) { el.classList.add('enter'); el.style.animationDelay = (n++ * 55) + 'ms'; }
-    list.appendChild(el);
-    amtCounters.set(b.id, counter(el.querySelector('.b-amt'), fmt, lastAmt.get(b.id) || 0));
-  });
-  seen = new Set(state.buckets.map(b => b.id));
-  renderSweepChips();
-  update();
-}
-
-const cAmt = counter($('#cAmt'), v => fmt(Math.abs(v)));
-function update() {
-  const c = compute(), mult = FREQ[state.freq];
-  c.rows.forEach(r => {
-    const el = cardOf(r.b.id); if (!el) return;
-    amtCounters.get(r.b.id).set(r.amt);
-    lastAmt.set(r.b.id, r.amt);
-    el.querySelector('.b-share').textContent = c.pay ? `${(r.amt / c.pay * 100).toFixed(1)}% of pay` : '0% of pay';
-    el.querySelector('.b-year').textContent = `${fmt0(r.amt * mult)} a year`;
-    const rng = el.querySelector('.b-range'), max = rangeMax(r.b, c.pay);
-    if (+rng.max !== max) rng.max = max;
-    rng.style.setProperty('--p', clamp(r.b.value / max * 100, 0, 100) + '%');
-    el.classList.toggle('zero', r.amt <= 0);
-  });
-  setDonut(c);
-
-  const over = c.rem < -0.004, done = !over && Math.abs(c.rem) < 0.005 && c.pay > 0;
-  document.body.classList.toggle('over', over);
-  document.body.classList.toggle('done', done);
-  document.body.classList.toggle('nopay', c.pay <= 0);
-  if (c.pay <= 0) { $('#cLabel').textContent = 'Enter your pay'; cAmt.set(0); $('#cSub').textContent = 'Type it in above'; }
-  else if (over) { $('#cLabel').textContent = 'Over by'; cAmt.set(-c.rem); $('#cSub').textContent = 'Trim a bucket to fit'; }
-  else if (done) { $('#cLabel').textContent = 'Every penny placed'; cAmt.set(c.pay); $('#cSub').textContent = 'Ready to split'; }
-  else { $('#cLabel').textContent = 'Left to assign'; cAmt.set(c.rem); $('#cSub').textContent = `${(c.rem / c.pay * 100).toFixed(1)}% unassigned`; }
-
-  const pct = c.pay ? c.alloc / c.pay * 100 : 0;
-  $('#mPct').textContent = pct.toFixed(pct % 1 ? 1 : 0) + '%';
-  $('#mAlloc').textContent = `${fmt(c.alloc)} of ${fmt(c.pay)}`;
-  $('#mBar').style.width = clamp(pct, 0, 100) + '%';
-
-  const live = c.rows.filter(r => r.amt > 0).length;
-  $('#splitSub').textContent = over ? `${fmt(-c.rem)} over budget` : c.pay <= 0 ? 'Add your pay first' : `${fmt(c.pay)} into ${live} bucket${live === 1 ? '' : 's'}`;
-
-  const showSweep = c.pay > 0 && c.rem >= 0.01 && state.buckets.length > 0;
-  $('#sweep').hidden = !showSweep;
-  if (showSweep) $('#sweepAmt').textContent = fmt(c.rem);
-}
-
-function renderSweepChips() {
-  $('#sweepChips').innerHTML = state.buckets.map(b =>
-    `<button class="chip" data-id="${b.id}" style="--c:${b.color}"><i></i>${esc(b.name || 'Untitled')}</button>`).join('');
-}
-
-/* card events */
-list.addEventListener('input', e => {
-  const card = e.target.closest('.bucket'); if (!card) return;
-  const b = state.buckets.find(x => x.id === card.dataset.id); if (!b) return;
-  if (e.target.classList.contains('b-name')) {
-    b.name = e.target.value; renderSweepChips();
-  } else if (e.target.classList.contains('b-range')) {
-    b.value = +e.target.value;
-    card.querySelector('.b-num').value = showVal(b.value);
-    Snd.tick(e.target.value / e.target.max);
-    buzz(3);
-  } else if (e.target.classList.contains('b-num')) {
-    b.value = Math.max(0, parseNum(e.target.value));
-    card.querySelector('.b-range').value = b.value;
-  }
-  touch(); update();
-});
-list.addEventListener('click', e => {
-  const card = e.target.closest('.bucket'); if (!card) return;
-  const b = state.buckets.find(x => x.id === card.dataset.id); if (!b) return;
-  const pay = compute().pay;
-  if (e.target.closest('.swatch')) {
-    b.color = SHADES[(SHADES.indexOf(b.color) + 1) % SHADES.length];
-    card.style.setProperty('--c', b.color);
-    Snd.click(); touch(); renderSweepChips(); update();
-  } else if (e.target.closest('.mode button')) {
-    const mode = e.target.closest('button').dataset.mode;
-    if (mode === b.mode) return;
-    const amt = b.mode === 'pct' ? pay * b.value / 100 : b.value;
-    b.mode = mode;
-    b.value = mode === 'fixed' ? Math.round(amt) : (pay ? Math.round(amt / pay * 100 * 100) / 100 : 0);
-    Snd.click(); touch(); renderBuckets();
-    const f = cardOf(b.id); if (f) f.querySelector('.mode [aria-pressed="true"]').focus();
-  } else if (e.target.closest('.del')) {
-    card.classList.add('leaving'); Snd.pop(); buzz(10);
-    setTimeout(() => {
-      state.buckets = state.buckets.filter(x => x.id !== b.id);
-      lastAmt.delete(b.id); touch(); renderBuckets();
-    }, reduce ? 0 : 300);
-  }
-});
-if (finePointer && !reduce) {
-  list.addEventListener('pointermove', e => {
-    const card = e.target.closest('.bucket'); if (!card) return;
-    const r = card.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-    card.style.setProperty('--mx', x * 100 + '%'); card.style.setProperty('--my', y * 100 + '%');
-    if (!e.target.matches('input')) card.style.transform = `perspective(900px) rotateX(${(.5 - y) * 5}deg) rotateY(${(x - .5) * 6}deg) translateY(-2px)`;
-  });
-  list.addEventListener('pointerleave', () => list.querySelectorAll('.bucket').forEach(c => c.style.transform = ''), true);
-  list.addEventListener('pointerout', e => { const c = e.target.closest('.bucket'); if (c && !c.contains(e.relatedTarget)) { c.style.transform = ''; highlight(c.dataset.id, false); } });
-  list.addEventListener('pointerover', e => { const c = e.target.closest('.bucket'); if (c) highlight(c.dataset.id, true); });
-}
-
-$('#addBtn').addEventListener('click', () => {
-  const used = new Set(state.buckets.map(b => b.color));
-  const color = SHADES.find(s => !used.has(s)) || SHADES[state.buckets.length % SHADES.length];
-  const b = { id: uid(), name: 'New bucket', mode: 'pct', value: 0, color };
-  state.buckets.push(b); touch(); renderBuckets(); Snd.coin(0); buzz(8);
-  const inp = $(`#name-${b.id}`); if (inp) { inp.focus(); inp.select(); }
-});
-
-const PRESETS = {
-  '50/30/20': [['Needs', 50], ['Wants', 30], ['Savings', 20]],
-  'Saver': [['Bills', 45], ['Savings', 30], ['Investing', 15], ['Fun money', 10]],
-  'Even': [['Bills', 25], ['Savings', 25], ['Food', 25], ['Fun', 25]]
-};
-$('#presets').addEventListener('click', e => {
-  const p = e.target.closest('[data-preset]'); if (!p) return;
-  state.buckets = PRESETS[p.dataset.preset].map(([name, value], i) => ({ id: uid(), name, mode: 'pct', value, color: SHADES[i] }));
-  touch(); renderBuckets(); Snd.whoosh(); buzz(12);
-  toast(`Loaded the ${p.textContent.trim()} setup`);
-});
-
-$('#sweepChips').addEventListener('click', e => {
-  const chip = e.target.closest('[data-id]'); if (!chip) return;
-  const c = compute(), b = state.buckets.find(x => x.id === chip.dataset.id);
-  if (!b || c.rem <= 0) return;
-  if (b.mode === 'pct') b.value = Math.round((b.value + c.rem / c.pay * 100) * 10000) / 10000;
-  else b.value = round2(b.value + c.rem);
-  const card = cardOf(b.id);
-  if (card) {
-    card.querySelector('.b-num').value = showVal(b.value);
-    card.querySelector('.b-range').value = b.value;
-    card.classList.remove('hit'); void card.offsetWidth; card.classList.add('hit');
-  }
-  Snd.coin(4); buzz(15); touch(); update();
-  toast(`Swept ${fmt(c.rem)} into ${b.name || 'that bucket'}`);
-});
-
-/* ---------------- pay + frequency ---------------- */
-const payIn = $('#pay'), payWrap = $('#payWrap');
-const fmtPayField = v => v ? v.toLocaleString('en-GB', { maximumFractionDigits: 2 }) : '';
-payIn.addEventListener('input', () => {
-  const raw = payIn.value.replace(/[^0-9.]/g, '');
-  const parts = raw.split('.');
-  const clean = parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('').slice(0, 2) : raw;
-  if (clean !== payIn.value) payIn.value = clean;
-  state.pay = parseNum(clean);
-  payWrap.classList.remove('bump'); void payWrap.offsetWidth; payWrap.classList.add('bump');
-  Snd.tick(.6); touch(); update();
-});
-payIn.addEventListener('focus', () => { payIn.value = state.pay ? String(state.pay) : ''; });
-payIn.addEventListener('blur', () => { payIn.value = fmtPayField(state.pay); });
-payIn.addEventListener('keydown', e => { if (e.key === 'Enter') payIn.blur(); });
-
-function renderFreq() { document.querySelectorAll('#freq .chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.freq === state.freq)); }
-$('#freq').addEventListener('click', e => {
-  const b = e.target.closest('[data-freq]'); if (!b) return;
-  state.freq = b.dataset.freq; renderFreq(); Snd.click(); buzz(5); touch(); update();
-});
-
-$('#currency').addEventListener('change', e => {
-  state.cur = e.target.value; mkNF(); $('#paySym').textContent = state.cur;
-  touch(); renderBuckets(); renderVault(); cAmt.set(cAmt.value, { instant: true });
-});
-function renderSound() { $('#soundBtn').setAttribute('aria-pressed', state.sound); $('#soundBtn').setAttribute('aria-label', state.sound ? 'Mute sounds' : 'Turn sounds on'); }
-$('#soundBtn').addEventListener('click', () => { state.sound = !state.sound; renderSound(); save(); Snd.init(); Snd.click(); });
-
-/* ---------------- FX canvas ---------------- */
-const fx = $('#fx'), g = fx.getContext('2d');
-let W = 0, H = 0, dpr = 1;
-function resize() { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; fx.width = W * dpr; fx.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); }
-resize(); addEventListener('resize', resize);
-const parts = [];
-let fxRaf = 0, lastT = 0;
-function kick() { if (!fxRaf) { lastT = performance.now(); fxRaf = requestAnimationFrame(fxLoop); } }
-const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-function spark(x0, y0, x1, y1, color, delay, onArrive) {
-  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1;
-  const bend = (Math.random() - .5) * Math.min(420, len * .9);
-  parts.push({ k: 'spark', x0, y0, x1, y1, cx: mx - dy / len * bend, cy: my + dx / len * bend - 60, t: -delay, dur: 650 + Math.random() * 350, color, size: 1.5 + Math.random() * 2.5, trail: [], onArrive });
-}
-function shard(x, y, color, power = 1) {
-  const a = Math.random() * Math.PI * 2, v = (4 + Math.random() * 9) * power;
-  parts.push({ k: 'shard', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 6 * power, rot: Math.random() * 6, vr: (Math.random() - .5) * .4, w: 4 + Math.random() * 8, h: 2 + Math.random() * 3, color, life: 1, decay: .006 + Math.random() * .008 });
-}
-function ring(x, y, color, max = 260, width = 3) { parts.push({ k: 'ring', x, y, r: 6, max, color, life: 1, width }); }
-
-function fxLoop(now) {
-  const dt = Math.min(40, now - lastT); lastT = now; const f = dt / 16.67;
-  g.clearRect(0, 0, W, H);
-  g.globalCompositeOperation = 'lighter';
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const p = parts[i];
-    if (p.k === 'spark') {
-      p.t += dt; if (p.t < 0) continue;
-      const u = Math.min(1, p.t / p.dur), e = easeInOut(u), iu = 1 - e;
-      const x = iu * iu * p.x0 + 2 * iu * e * p.cx + e * e * p.x1, y = iu * iu * p.y0 + 2 * iu * e * p.cy + e * e * p.y1;
-      p.trail.push(x, y); if (p.trail.length > 16) p.trail.splice(0, 2);
-      g.strokeStyle = p.color; g.lineCap = 'round';
-      for (let j = 2; j < p.trail.length; j += 2) {
-        g.globalAlpha = j / p.trail.length * .9; g.lineWidth = p.size * (j / p.trail.length);
-        g.beginPath(); g.moveTo(p.trail[j - 2], p.trail[j - 1]); g.lineTo(p.trail[j], p.trail[j + 1]); g.stroke();
-      }
-      g.globalAlpha = .25; g.fillStyle = p.color; g.beginPath(); g.arc(x, y, p.size * 3.5, 0, 7); g.fill();
-      g.globalAlpha = 1; g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, p.size * .7, 0, 7); g.fill();
-      if (u >= 1) { parts.splice(i, 1); if (p.onArrive) p.onArrive(); for (let s = 0; s < 2; s++) shard(p.x1, p.y1, p.color, .35); }
-    } else if (p.k === 'shard') {
-      p.vy += .32 * f; p.vx *= Math.pow(.985, f); p.x += p.vx * f; p.y += p.vy * f; p.rot += p.vr * f; p.life -= p.decay * f;
-      if (p.life <= 0 || p.y > H + 40) { parts.splice(i, 1); continue; }
-      g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.globalAlpha = Math.min(1, p.life * 1.5);
-      g.fillStyle = p.color; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot * 2)) + .5); g.restore();
-    } else if (p.k === 'ring') {
-      p.r += (p.max - p.r) * .09 * f; p.life -= .025 * f;
-      if (p.life <= 0) { parts.splice(i, 1); continue; }
-      g.globalAlpha = p.life; g.strokeStyle = p.color; g.lineWidth = p.width * p.life + .5;
-      g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.stroke();
-    }
-  }
-  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-  fxRaf = parts.length ? requestAnimationFrame(fxLoop) : 0;
-  if (!fxRaf) g.clearRect(0, 0, W, H);
-}
-
-/* ---------------- hold to split ---------------- */
-const btn = $('#splitBtn'), lbl = $('#splitLbl');
-let holding = false, holdStart = 0, holdRaf = 0, splitting = false;
-function canSplit(loud) {
-  const c = compute();
-  if (c.pay <= 0) { if (loud) { nope(payWrap); toast('Put your paycheck amount in first'); payIn.focus(); } return false; }
-  if (c.rem < -0.004) { if (loud) { nope(btn); toast(`You've assigned ${fmt(-c.rem)} more than you earn. Trim a bucket.`); } return false; }
-  if (!c.rows.some(r => r.amt > 0)) { if (loud) { nope(btn); toast('Give at least one bucket some money'); } return false; }
-  return true;
-}
-function nope(el) { el.classList.remove('nope', 'nudge'); void el.offsetWidth; el.classList.add(el === btn ? 'nudge' : 'nope'); Snd.tone(140, .18, 'square', .05); buzz([20, 40, 20]); }
-function holdBegin() {
-  if (splitting || holding) return;
-  if (!canSplit(true)) return;
-  holding = true; holdStart = performance.now();
-  btn.classList.add('charging'); lbl.textContent = 'Keep holding';
-  Snd.chargeStart();
-  holdRaf = requestAnimationFrame(holdStep);
-}
-function holdStep(now) {
-  if (!holding) return;
-  const p = Math.min(1, (now - holdStart) / HOLD_MS);
-  btn.style.setProperty('--charge', p);
-  btn.classList.toggle('hot', p > .55 && !reduce);
-  if (Math.random() < p * .5) buzz(4);
-  if (p >= 1) { holdEnd(true); return; }
-  holdRaf = requestAnimationFrame(holdStep);
-}
-function holdEnd(fire) {
-  if (!holding) return;
-  holding = false; cancelAnimationFrame(holdRaf); Snd.chargeStop();
-  btn.classList.remove('charging', 'hot');
-  if (fire) { btn.style.setProperty('--charge', 1); doSplit(); }
-  else {
-    const p = parseFloat(getComputedStyle(btn).getPropertyValue('--charge')) || 0;
-    btn.style.setProperty('--charge', 0); lbl.textContent = 'Hold to split';
-    if (p < .25) toast('Press and hold to split it');
-  }
-}
-btn.addEventListener('pointerdown', e => { if (e.button !== 0) return; e.preventDefault(); try { btn.setPointerCapture(e.pointerId); } catch (_) {} holdBegin(); });
-btn.addEventListener('pointerup', () => holdEnd(false));
-btn.addEventListener('pointercancel', () => holdEnd(false));
-btn.addEventListener('lostpointercapture', () => holdEnd(false));
-btn.addEventListener('contextmenu', e => e.preventDefault());
-btn.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); holdBegin(); } else if (e.key === ' ' || e.key === 'Enter') e.preventDefault(); });
-btn.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') holdEnd(false); });
-btn.addEventListener('blur', () => holdEnd(false));
-
-function centerOf(el) { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, vis: r.bottom > 0 && r.top < innerHeight }; }
-const wait = ms => new Promise(r => setTimeout(r, ms));
-
-async function doSplit() {
-  if (splitting) return;
-  splitting = true; lbl.textContent = 'Splitting';
-  const c = compute();
-  const live = c.rows.filter(r => r.amt > 0);
-  const dOrigin = centerOf($('.donut-wrap'));
-  const origin = dOrigin.vis && innerWidth > 640 ? dOrigin : centerOf(btn);
-
-  Snd.whoosh(); Snd.thump(); buzz(30);
-  if (!reduce) { ring(origin.x, origin.y, '#DC143C', 320, 5); ring(origin.x, origin.y, '#ffffff', 180, 2); kick(); }
-
-  const tasks = live.map((r, i) => new Promise(res => {
-    setTimeout(() => {
-      const card = cardOf(r.b.id);
-      if (!card) return res();
-      const hit = () => {
-        card.classList.remove('hit'); void card.offsetWidth; card.classList.add('hit');
-        const ctr = amtCounters.get(r.b.id); if (ctr) ctr.set(r.amt, { from: 0 });
-        Snd.coin(i); buzz(12);
-        res();
-      };
-      if (reduce) { hit(); return; }
-      const target = centerOf(card.querySelector('.b-amt'));
-      const n = clamp(Math.round(8 + (r.amt / c.pay) * 60), 8, 40);
-      let first = true;
-      for (let k = 0; k < n; k++) {
-        spark(origin.x + (Math.random() - .5) * 30, origin.y + (Math.random() - .5) * 30,
-          target.x + (Math.random() - .5) * 40, target.y + (Math.random() - .5) * 16,
-          k % 3 ? r.b.color : '#ffffff', k * 14 + Math.random() * 90,
-          () => { if (first) { first = false; hit(); } });
-      }
-      kick();
-    }, i * (reduce ? 120 : 190));
-  }));
-  await Promise.all(tasks);
-  await wait(reduce ? 100 : 420);
-
-  // payoff
-  Snd.chord(); buzz([40, 30, 80]);
-  if (!reduce) {
-    const colors = ['#DC143C', '#FF3A5C', '#ffffff', '#B8AEB2', '#9E0F2E'];
-    for (let i = 0; i < 140; i++) shard(innerWidth / 2 + (Math.random() - .5) * 200, innerHeight * .45, colors[i % colors.length], 1.25);
-    ring(innerWidth / 2, innerHeight * .45, '#FF3A5C', Math.max(innerWidth, innerHeight) * .7, 6);
-    kick();
-    const w = $('#wrap'); w.classList.remove('quake'); void w.offsetWidth; w.classList.add('quake');
-  }
-  const entry = { id: uid(), t: Date.now(), pay: c.pay, cur: state.cur, freq: state.freq, parts: live.map(r => ({ name: r.b.name || 'Untitled', amt: r.amt, color: r.b.color })) };
-  state.history.unshift(entry); state.history = state.history.slice(0, 60);
-  save(); renderVault(entry.id);
-  showStamp(`${fmt(c.pay)} across ${live.length} bucket${live.length === 1 ? '' : 's'}`);
-
-  btn.style.setProperty('--charge', 0); lbl.textContent = 'Hold to split';
-  splitting = false;
-}
-
-let stampT;
-function showStamp(text) {
-  const s = $('#stamp'); $('#stampSub').textContent = text;
-  s.classList.remove('out'); s.hidden = false;
-  const inner = s.querySelector('.stamp-inner'); inner.style.animation = 'none'; void inner.offsetWidth; inner.style.animation = '';
-  clearTimeout(stampT); stampT = setTimeout(hideStamp, 1900);
-}
-function hideStamp() { const s = $('#stamp'); if (s.hidden) return; s.classList.add('out'); setTimeout(() => { s.hidden = true; s.classList.remove('out'); }, 380); }
-$('#stamp').addEventListener('click', () => { clearTimeout(stampT); hideStamp(); });
-
-/* ---------------- vault ---------------- */
-const dateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-function renderVault(newId) {
-  const hist = state.history.filter(h => h.cur === state.cur);
-  const total = hist.reduce((s, h) => s + h.pay, 0);
-  $('#vaultMeta').innerHTML = hist.length ? `<b>${fmt(total)}</b> split over <b>${hist.length}</b> paycheck${hist.length === 1 ? '' : 's'}` : '';
-  $('#clearBtn').hidden = !state.history.length;
-
-  const agg = new Map();
-  hist.forEach(h => h.parts.forEach(p => {
-    const k = p.name.trim().toLowerCase();
-    const a = agg.get(k) || { name: p.name, amt: 0, color: p.color };
-    a.amt += p.amt; agg.set(k, a);
-  }));
-  const rows = [...agg.values()].sort((a, b) => b.amt - a.amt);
-  const top = rows.length ? rows[0].amt : 1;
-  $('#vbars').innerHTML = rows.length ? rows.map(r => `
-    <div class="vbar" style="--c:${r.color}"><span>${esc(r.name)}</span><b class="tab">${fmt(r.amt)}</b><div class="bar"><i data-w="${r.amt / top * 100}"></i></div></div>`).join('')
-    : `<div class="empty">Nothing in the vault yet. Hold the split button and your totals start stacking up here.</div>`;
-  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll('#vbars .bar i').forEach(i => i.style.width = i.dataset.w + '%')));
-
-  $('#history').innerHTML = state.history.length ? state.history.map(h => {
-    const f = new Intl.NumberFormat('en-GB', { style: 'currency', currency: CUR[h.cur] || 'GBP' });
-    return `<li class="h-item${h.id === newId ? ' new' : ''}" data-id="${h.id}">
-      <time datetime="${new Date(h.t).toISOString()}">${dateFmt.format(h.t)} · ${h.freq}</time>
-      <b class="tab">${f.format(h.pay)}</b>
-      <button class="del" aria-label="Remove this split"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-      <div class="stack">${h.parts.map(p => `<i style="--c:${p.color};flex:${p.amt}" title="${esc(p.name)} ${f.format(p.amt)}"></i>`).join('')}</div>
-    </li>`;
-  }).join('') : `<li class="empty">No splits yet</li>`;
-}
-$('#history').addEventListener('click', e => {
-  const d = e.target.closest('.del'); if (!d) return;
-  const li = d.closest('.h-item');
-  state.history = state.history.filter(h => h.id !== li.dataset.id);
-  Snd.pop(); save(); renderVault(); toast('Split removed');
-});
-let armT;
-$('#clearBtn').addEventListener('click', e => {
-  const b = e.currentTarget;
-  if (!b.classList.contains('armed')) {
-    b.classList.add('armed'); b.textContent = 'Tap again to wipe it';
-    clearTimeout(armT); armT = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Clear history'; }, 3000);
-    return;
-  }
-  clearTimeout(armT); b.classList.remove('armed'); b.textContent = 'Clear history';
-  state.history = []; save(); renderVault(); Snd.pop(); toast('History cleared');
-});
-
-/* ---------------- boot ---------------- */
-$('#currency').value = state.cur;
-$('#paySym').textContent = state.cur;
-$('#exampleTag').hidden = !!state.touched;
-payIn.value = fmtPayField(state.pay);
-renderFreq(); renderSound(); renderBuckets(); renderVault();
-})();
-</script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

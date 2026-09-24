@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Crimson Cut FX Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{--black:#0A0708;--panel:#171113;--g1:#211A1D;--g2:#2F2529;--g3:#46383E;--muted:#9C8E93;--crimson:#DC143C;--hi:#FF3A5C;--deep:#6B0A1E;--text:#F4ECEE}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--black);color:var(--text);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px}
+body{padding:16px;min-height:100vh}
+h1{font:900 26px "Big Shoulders Display",Impact,sans-serif;letter-spacing:2px;margin:0 0 10px;color:var(--hi)}
+#note{height:150px;border-radius:12px;background:linear-gradient(135deg,#8A0D27,#1E0A10 70%,#0A0708);border:1px solid var(--g3);display:flex;align-items:center;padding:0 20px;font:900 44px "Big Shoulders Display",Impact,sans-serif}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.tile{height:74px;border-radius:14px;background:var(--panel);border:1px solid var(--g2);padding:8px;display:flex;flex-direction:column;justify-content:space-between;transition:transform .15s}
+.tile b{font:800 15px "Big Shoulders Display",Impact,sans-serif;letter-spacing:1px}
+.tile i{font-style:normal;color:var(--muted)}
+.tile.hit{transform:scale(1.06);border-color:var(--hi)}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{background:var(--g1);color:var(--text);border:1px solid var(--g3);border-radius:10px;padding:9px 10px;font:inherit}
+button.pri{background:var(--crimson);border-color:var(--hi)}
+#drag{margin-top:12px;user-select:none;-webkit-user-select:none;height:90px;border:1px dashed var(--g3);border-radius:12px;display:grid;place-items:center;color:var(--muted);touch-action:none}
+#log{margin-top:10px;white-space:pre-wrap;color:var(--muted);max-height:120px;overflow:auto}
+#fx{position:fixed;inset:0;width:100%;height:100%;z-index:40;pointer-events:none}
+</style>
+</head>
+<body>
+<h1>FX LAB</h1>
+<div id="note">£2,400.00</div>
+<div class="grid" id="grid"></div>
+<div class="btns">
+  <button class="pri" id="split6">Split x6</button>
+  <button id="split1">Split x1</button>
+  <button id="split12">Split x12</button>
+  <button id="splitRM">Reduced</button>
+  <button id="conf">Confetti</button>
+  <button id="burst">Spark</button>
+  <button id="shock">Shock</button>
+  <button id="flash">Flash</button>
+</div>
+<div id="drag">drag here: blade trail</div>
+<div id="log"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<script type="module">
+import { createFx } from '../js/fx.js';
+const SHADES = ['#DC143C','#FF3A5C','#B8AEB2','#9E0F2E','#FF8095','#6E6468','#E8E0E2','#5E0B1D'];
+const NAMES = ['RENT','BILLS','FOOD','SAVINGS','FUN','INVEST'];
+const AMTS = [900, 300, 350, 500, 250, 100];
+const grid = document.getElementById('grid');
+NAMES.forEach((n, i) => { const d = document.createElement('div'); d.className = 'tile'; d.innerHTML = `<b style="color:${SHADES[i]}">${n}</b><i>£${AMTS[i]}</i>`; grid.appendChild(d); });
+const tiles = [...grid.children];
+const fx = createFx(document.getElementById('fx'));
+const fxRM = createFx(document.getElementById('fx'), { reduceMotion: true });
+window.fx = fx;
+const logEl = document.getElementById('log');
+const events = [];
+window.__events = events;
+const t0 = { v: 0 };
+function log(msg) { const line = `${Math.round(performance.now() - t0.v)}ms ${msg}`; events.push(line); console.log(line); logEl.textContent = line + '\n' + logEl.textContent; }
+const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; };
+
+function split(n, inst = fx) {
+  events.length = 0; t0.v = performance.now();
+  const pieces = [];
+  for (let i = 0; i < n; i++) {
+    const k = i % 6;
+    pieces.push({ amount: n === 12 ? (i === 3 ? 2 : 50 + i * 30) : AMTS[k], color: SHADES[i % SHADES.length], label: NAMES[k], target: rect(tiles[k]) });
+  }
+  if (n === 12) pieces[11].target = null; // guard test: missing target
+  const noteEl = document.getElementById('note');
+  noteEl.style.visibility = 'hidden';
+  log('start busy=' + inst.busy);
+  const pr = inst.playSplit({
+    note: { rect: rect(noteEl), amountText: '£2,400.00', label: 'PAYCHECK', serial: 'CC-0042' },
+    pieces,
+    onSlash: (k, total) => log(`onSlash ${k}/${total}`),
+    onHit: (i) => { log(`onHit ${i}`); const t = tiles[i % 6]; t.classList.add('hit'); setTimeout(() => t.classList.remove('hit'), 180); },
+    onDone: () => log('onDone'),
+  });
+  log('busy after call=' + inst.busy);
+  pr.then(() => { log('resolved busy=' + inst.busy); noteEl.style.visibility = ''; window.__resolved = true; });
+  return pr;
+}
+window.split = split;
+document.getElementById('split6').onclick = () => split(6);
+document.getElementById('split1').onclick = () => split(1);
+document.getElementById('split12').onclick = () => split(12);
+document.getElementById('splitRM').onclick = () => split(6, fxRM);
+document.getElementById('conf').onclick = () => fx.confetti(innerWidth / 2, innerHeight / 2);
+document.getElementById('burst').onclick = (e) => fx.sparkBurst(e.clientX, e.clientY, { power: 1.3 });
+document.getElementById('shock').onclick = () => fx.shockwave(innerWidth / 2, innerHeight / 2);
+document.getElementById('flash').onclick = () => fx.flash(1);
+const drag = document.getElementById('drag');
+let down = false;
+drag.addEventListener('pointerdown', (e) => { down = true; drag.setPointerCapture(e.pointerId); fx.trail(e.clientX, e.clientY); });
+drag.addEventListener('pointermove', (e) => { if (down) fx.trail(e.clientX, e.clientY); });
+drag.addEventListener('pointerup', () => { down = false; });
+drag.addEventListener('pointercancel', () => { down = false; });
+</script>
+</body>
+</html>

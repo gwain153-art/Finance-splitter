@@ -1,11 +1,21 @@
 # Crimson Cut
 
-A paycheck splitter. Punch in what you got paid, carve it into buckets (percent of pay or fixed amounts), then hold the button to split it.
+An over-the-top paycheck splitter built to live on your iPhone home screen.
 
-- Live donut, count-up numbers, per-bucket yearly projections
-- Sweep any leftover into a bucket with one tap
-- Presets: 50/30/20, Saver, Even four
-- Hold-to-split with particles, sound and haptics
-- The Vault: all-time totals per bucket and a history of past splits
+Put in what landed, carve it into buckets (percent of pay or fixed amounts), then swipe the blade to cut the banknote into pieces that fly into each bucket.
 
-Single file, no build. Open `index.html` in a browser. Everything is saved in your browser's localStorage.
+- Live WebGL crimson smoke background that reacts to touch, tilt and splits
+- Banknote cutscene: katana slashes, flying strips, confetti, screen shake
+- Synthesised sound design that plays through the iPhone silent switch
+- Real iPhone haptics (iOS 18+ switch trick, vibrate on Android)
+- Custom keypad, rolling odometer numbers, liquid-fill buckets, goals per bucket
+- The Vault: all-time totals, stacked chart, history with undo
+- Ranks: 16 levels, XP, 33 achievements (some hidden)
+- Installable PWA: works offline, launch screens, home-screen icon
+- Backup export/import (data lives on your device)
+
+No build step. Serve the folder over HTTPS (GitHub Pages or Netlify) and open it in Safari, then Share > Add to Home Screen.
+
+Local: `python3 -m http.server` and open http://localhost:8000.
+
+`dev/` holds test pages for sound, background, FX and PWA, plus the v1 single-file version.

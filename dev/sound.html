@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Sound Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#0A0708;--panel:#171113;--line:#2F2529;--text:#F4ECEE;--muted:#9C8E93;--crimson:#DC143C;--hi:#FF3A5C}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;padding:16px;padding-top:max(16px,env(safe-area-inset-top));-webkit-tap-highlight-color:transparent}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:.04em;text-transform:uppercase}
+h1 b{color:var(--crimson)}
+h2{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin:22px 0 8px}
+#status{font:12px/1.5 ui-monospace,Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
+#status .ok{color:#6fdc8c}#status .bad{color:var(--hi)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+button{font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 8px;min-height:58px;font-weight:600;cursor:pointer;touch-action:manipulation;transition:transform .08s,border-color .15s,background .15s}
+button:active{transform:scale(.96);border-color:var(--crimson);background:#2a1016}
+button.big{background:var(--crimson);border-color:var(--crimson)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row label{display:flex;gap:6px;align-items:center;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--crimson);height:44px}
+.charge{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.meter{height:8px;border-radius:4px;background:#2a1a1f;overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6B0A1E,var(--crimson),var(--hi))}
+</style>
+</head>
+<body>
+<h1>Crimson <b>Cut</b> sound lab</h1>
+<div id="status">tap anywhere to unlock audio</div>
+
+<h2>Controls</h2>
+<div class="row">
+  <label><input type="checkbox" id="snd" checked> sound</label>
+  <label><input type="checkbox" id="hap" checked> haptics</label>
+  <button id="seq">coin run 1..10</button>
+  <button id="cuts">triple slash</button>
+  <button id="finale" class="big">full split</button>
+</div>
+
+<h2>Swipe to cut (charge riser)</h2>
+<div class="charge">
+  <input type="range" id="charge" min="0" max="100" value="0">
+  <div class="meter"><i id="meter"></i></div>
+  <div style="color:var(--muted);font-size:12px;margin-top:6px">Drag right. Release at 95%+ to lock in, earlier to fizzle.</div>
+</div>
+
+<h2>Sounds</h2>
+<div class="grid" id="sounds"></div>
+
+<h2>Keypad (key i)</h2>
+<div class="grid" id="keys"></div>
+
+<h2>Tick slider</h2>
+<input type="range" id="tick" min="0" max="100" value="50">
+
+<h2>Haptics</h2>
+<div class="grid" id="haptics"></div>
+
+<script type="module">
+import { Sound } from '../js/audio.js';
+import { Haptics } from '../js/haptics.js';
+Sound.install();
+Haptics.install();
+window.Sound = Sound; window.Haptics = Haptics;
+
+const $ = (s) => document.querySelector(s);
+const mk = (parent, text, fn, cls) => {
+  const b = document.createElement('button');
+  b.textContent = text; if (cls) b.className = cls;
+  b.addEventListener('click', fn);
+  parent.appendChild(b); return b;
+};
+
+const SOUNDS = [
+  ['tap'], ['toggle', { on: true }, 'toggle on'], ['toggle', { on: false }, 'toggle off'], ['open'], ['close'],
+  ['pop'], ['delete'], ['coin', { i: 0 }, 'coin 0'], ['coin', { i: 7 }, 'coin 7'], ['whoosh', { dur: 0.3 }, 'whoosh .3'],
+  ['whoosh', { dur: 0.6 }, 'whoosh .6'], ['whoosh', { dur: 1.2 }, 'whoosh 1.2'], ['slash', { i: 0 }, 'slash'],
+  ['thump'], ['fanfare'], ['error'], ['sweep'], ['achievement'], ['levelup'], ['boot'], ['tick', { v: 0.5 }, 'tick'],
+];
+SOUNDS.forEach(([n, o, label]) => mk($('#sounds'), label || n, () => Sound.play(n, o || {})));
+['1','2','3','4','5','6','7','8','9','.','0','⌫'].forEach((k, i) => mk($('#keys'), k, () => { Sound.play('key', { i }); Haptics.tap(); }));
+['tap','light','medium','heavy','success','error','tick'].forEach((h) => mk($('#haptics'), h, () => Haptics[h]()));
+mk($('#haptics'), 'pattern', () => Haptics.pattern([20, 60, 20, 60, 80]));
+
+$('#snd').addEventListener('change', (e) => { Sound.enabled = e.target.checked; });
+$('#hap').addEventListener('change', (e) => { Haptics.enabled = e.target.checked; });
+$('#seq').addEventListener('click', () => { for (let i = 0; i < 10; i++) setTimeout(() => { Sound.play('coin', { i }); Haptics.tick(); }, i * 90); });
+$('#cuts').addEventListener('click', () => { for (let i = 0; i < 3; i++) setTimeout(() => { Sound.play('slash', { i }); Haptics.heavy(); }, i * 140); });
+$('#finale').addEventListener('click', () => {
+  Sound.play('whoosh', { dur: 0.35 });
+  setTimeout(() => { Sound.play('slash', { i: 0 }); Sound.play('thump'); Haptics.heavy(); }, 300);
+  for (let i = 0; i < 5; i++) setTimeout(() => { Sound.play('coin', { i }); Haptics.tick(); }, 600 + i * 110);
+  setTimeout(() => { Sound.play('fanfare'); Haptics.success(); }, 1250);
+});
+
+const tick = $('#tick');
+tick.addEventListener('input', () => { const v = tick.value / 100; Sound.play('tick', { v }); Haptics.tick(); });
+
+const ch = $('#charge'), meter = $('#meter');
+let charging = false;
+const begin = () => { if (!charging) { charging = true; Sound.startCharge(); } };
+ch.addEventListener('pointerdown', begin);
+ch.addEventListener('input', () => { begin(); const v = ch.value / 100; Sound.setCharge(v); meter.style.width = ch.value + '%'; if (ch.value % 10 === 0) Haptics.tick(); });
+const end = () => {
+  if (!charging) return; charging = false;
+  const ok = ch.value >= 95;
+  Sound.stopCharge(ok);
+  ok ? Haptics.success() : Haptics.light();
+  ch.value = 0; meter.style.width = '0';
+};
+ch.addEventListener('change', end);
+ch.addEventListener('pointerup', end);
+ch.addEventListener('touchend', end);
+
+const status = $('#status');
+setInterval(() => {
+  const as = navigator.audioSession;
+  const st = Sound.state;
+  status.innerHTML =
+    `AudioContext: <span class="${st === 'running' ? 'ok' : 'bad'}">${st}</span>  ready: ${Sound.ready}\n` +
+    `audioSession: ${as ? `<span class="ok">yes (type=${as.type})</span>` : '<span class="bad">not available</span>'}\n` +
+    `buffers rendered: ${Sound.rendered}/${Sound.designs.length}  sound: ${Sound.enabled}\n` +
+    `haptics supported: ${Haptics.supported}  vibrate API: ${typeof navigator.vibrate === 'function'}  standalone: ${!!(navigator.standalone || matchMedia('(display-mode: standalone)').matches)}`;
+}, 250);
+</script>
+</body>
+</html>
