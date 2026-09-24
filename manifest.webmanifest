@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Crimson Cut",
+  "short_name": "Crimson Cut",
+  "description": "Split every paycheck into bills, savings and spending in one animated cut.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0708",
+  "theme_color": "#0A0708",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

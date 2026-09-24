@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="-120 -120 240 240">
+  <title>Crimson Cut</title>
+  <defs>
+    <linearGradient id="lg" x1="-90" y1="90" x2="90" y2="-90" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B00F30"/>
+      <stop offset="0.55" stop-color="#DC143C"/>
+      <stop offset="1" stop-color="#FF3A5C"/>
+    </linearGradient>
+    <radialGradient id="ld" cx="-12" cy="-16" r="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF3A5C"/>
+      <stop offset="0.6" stop-color="#DC143C"/>
+      <stop offset="1" stop-color="#A80E2E"/>
+    </radialGradient>
+    <mask id="lm" maskUnits="userSpaceOnUse" x="-120" y="-120" width="240" height="240">
+      <rect x="-120" y="-120" width="240" height="240" fill="#fff"/>
+      <rect x="-130" y="-6.5" width="260" height="13" fill="#000" transform="rotate(-45)"/>
+    </mask>
+    <filter id="lf" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter></defs>
+  <g filter="url(#lf)" opacity="0.75" mask="url(#lm)">
+      <circle r="83" fill="none" stroke="#DC143C" stroke-width="22"/>
+      <circle r="46" fill="#DC143C"/>
+    </g>
+    <g mask="url(#lm)">
+      <circle r="83" fill="none" stroke="url(#lg)" stroke-width="18"/>
+      <circle r="46" fill="url(#ld)"/>
+      <circle r="74" fill="none" stroke="#FF3A5C" stroke-opacity="0.35" stroke-width="1"/>
+    </g>
+    <rect x="-92" y="-0.8" width="184" height="1.6" rx="0.8" fill="#F4ECEE" opacity="0.7" transform="rotate(-45)"/>
+</svg>
