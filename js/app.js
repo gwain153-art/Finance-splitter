@@ -14,6 +14,7 @@ const createFx = await soft('./fx.js', m => m.createFx, null);
 const progress = await soft('./progress.js', m => m, null);
 const openBankRun = await soft('./bankrun.js', m => m.openBankRun, null);
 const createVaultDoor = await soft('./vaultdoor.js', m => m.createVaultDoor, null);
+const coach = await soft('./coach.js', m => m, null);
 const pwa = await soft('./pwa.js', m => m, { registerSW: noop, isStandalone: () => false, isIOS: () => false, requestPersistentStorage: async () => false });
 
 const $ = s => document.querySelector(s);
@@ -254,6 +255,7 @@ const list = $('#buckets');
 const amtOdos = new Map();
 let seen = new Set();
 const cardOf = id => list.querySelector(`.bucket[data-id="${id}"]`);
+const cardIO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => e.target.classList.toggle('off', !e.isIntersecting)), { rootMargin: '80px' }) : null;
 const showVal = v => String(+(+v).toFixed(2));
 const rangeMax = (b, pay) => b.mode === 'pct' ? 100 : Math.max(100, Math.ceil(pay), Math.ceil(b.value));
 const WAVE = 'M0 6 Q12.5 0 25 6 T50 6 T75 6 T100 6 T125 6 T150 6 T175 6 T200 6 V12 H0Z';
@@ -298,6 +300,8 @@ function renderBuckets() {
   });
   seen = new Set(state.buckets.map(b => b.id));
   void prev;
+  // Pause the liquid waves on cards that are off screen, so scrolling stays smooth.
+  if (cardIO) list.querySelectorAll('.bucket').forEach(el => cardIO.observe(el));
   renderSweepChips();
   update();
 }
@@ -340,7 +344,47 @@ function update() {
   if (showSweep) $('#sweepAmt').textContent = fmt(c.rem);
   renderCutbar(c);
   syncMood();
+  queueCoach();
 }
+
+/* =========================================================
+   COACH
+   ========================================================= */
+let coachT, coachSig = '';
+function queueCoach() { clearTimeout(coachT); coachT = setTimeout(renderCoach, 350); }
+function renderCoach() {
+  if (!coach) { $('#coach').hidden = true; return; }
+  let list = [];
+  try { list = coach.insights(state, { compute, fmt, fmt0: fmtShort, bucketTotal }); } catch (e) { console.warn(e); }
+  const sig = JSON.stringify(list);
+  if (sig === coachSig) return;
+  coachSig = sig;
+  const track = $('#coachTrack'), keep = track.scrollLeft;
+  $('#coach').hidden = !list.length;
+  track.innerHTML = list.map((a, i) => `<article class="coach-card tone-${a.tone}" data-i="${i}">
+      <span class="cc-ic">${icon(a.icon)}</span>
+      <div class="cc-body"><b>${esc(a.title)}</b><p>${esc(a.body)}</p>${a.action ? `<button class="cc-act" data-kind="${a.action.kind}" data-id="${esc(a.action.id || '')}">${esc(a.action.label)}</button>` : ''}</div>
+    </article>`).join('');
+  $('#coachDots').innerHTML = list.length > 1 ? list.map((_, i) => `<i data-i="${i}"></i>`).join('') : '';
+  track.scrollLeft = keep;
+  coachDots();
+}
+function coachDots() {
+  const track = $('#coachTrack'), w = track.clientWidth || 1;
+  const i = Math.round(track.scrollLeft / w);
+  $$('#coachDots i').forEach((d, k) => d.classList.toggle('on', k === i));
+  return i;
+}
+let coachIdx = 0;
+$('#coachTrack').addEventListener('scroll', () => { const i = coachDots(); if (i !== coachIdx) { coachIdx = i; Haptics.tick(); Sound.play('tick', { v: .3 }); } }, { passive: true });
+$('#coachDots').addEventListener('click', e => { const d = e.target.closest('i'); if (!d) return; const t = $('#coachTrack'); t.scrollTo({ left: +d.dataset.i * t.clientWidth, behavior: 'smooth' }); });
+$('#coachTrack').addEventListener('click', e => {
+  const b = e.target.closest('.cc-act'); if (!b) return;
+  const { kind, id } = b.dataset;
+  if (kind === 'sweep') sweepInto(id, b);
+  else if (kind === 'bucket') openBucketSheet(id);
+  else if (kind === 'add') { addBucket(id); toast(`${id} added. Give it a slice.`); }
+});
 function renderSweepChips() {
   $('#sweepChips').innerHTML = state.buckets.map(b => `<button class="chip" data-id="${b.id}" style="--c:${b.color}"><i></i>${esc(b.name || 'Untitled')}</button>`).join('');
 }
@@ -411,20 +455,21 @@ function deleteBucket(id) {
   }, reduce ? 0 : 320);
 }
 
-$('#addBtn').addEventListener('click', () => {
+$('#addBtn').addEventListener('click', () => addBucket());
+function addBucket(name = 'New bucket') {
   const used = new Set(state.buckets.map(b => b.color));
   const color = SHADES.find(s => !used.has(s)) || SHADES[state.buckets.length % SHADES.length];
-  const b = { id: uid(), name: 'New bucket', mode: 'pct', value: 0, color, goal: null };
+  const b = { id: uid(), name, mode: 'pct', value: 0, color, goal: null };
   state.buckets.push(b); touch(); renderBuckets();
   Sound.play('pop'); Haptics.medium();
   const card = cardOf(b.id);
   if (card) {
     card.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
     setTimeout(() => { const c = centre(card); fx.sparkBurst(c.x, c.y, { color, count: 30 }); }, 250);
-    const inp = card.querySelector('.b-name'); inp.focus(); inp.select();
+    if (name === 'New bucket') { const inp = card.querySelector('.b-name'); inp.focus(); inp.select(); }
   }
   queueProgress();
-});
+}
 
 const PRESETS = {
   503020: [['Needs', 50], ['Wants', 30], ['Savings', 20]],
@@ -442,21 +487,21 @@ $('#presets').addEventListener('click', e => {
 });
 
 $('#sweepChips').addEventListener('click', e => {
-  const chip = e.target.closest('[data-id]'); if (!chip) return;
-  const c = compute(), b = state.buckets.find(x => x.id === chip.dataset.id);
+  const chip = e.target.closest('[data-id]'); if (chip) sweepInto(chip.dataset.id, chip);
+});
+function sweepInto(id, chip) {
+  const c = compute(), b = state.buckets.find(x => x.id === id);
   if (!b || c.rem <= 0) return;
   if (b.mode === 'pct') b.value = Math.round((b.value + c.rem / c.pay * 100) * 10000) / 10000;
   else b.value = round2(b.value + c.rem);
   const card = cardOf(b.id);
   if (card) { card.querySelector('.b-num').value = showVal(b.value); card.querySelector('.b-range').value = b.value; }
   const from = centre(chip);
-  const to = card ? centre(card.querySelector('.b-amt')) : from;
   fx.sparkBurst(from.x, from.y, { color: b.color, count: 20 });
   setTimeout(() => hitCard(b.id), 120);
   Sound.play('sweep'); Haptics.success(); touch(); update();
   toast(`Swept ${fmt(c.rem)} into ${b.name || 'that bucket'}`);
-  void to;
-});
+}
 
 /* bucket sheet */
 let bsId = null;
@@ -647,6 +692,7 @@ async function runSplit() {
   if (!reduce) { fx.confetti(innerWidth / 2, innerHeight * .42, { count: 200 }); fx.shockwave(innerWidth / 2, innerHeight * .42, { radius: Math.max(innerWidth, innerHeight) * .7 }); }
   $('#stampSub').textContent = `${fmt(c.pay)} into ${live.length} bucket${live.length === 1 ? '' : 's'}`;
   $('#stampXp').textContent = before && after ? `+${Math.round(after.xp - before.xp)} XP` : '';
+  $('#stampLine').textContent = coach ? coach.line('cut') : '';
   const toMove = parts.filter(p => !p.auto);
   $('#stampDone').textContent = allAuto ? 'Nice' : 'Bank it';
   $('#stampLater').hidden = allAuto;
@@ -826,6 +872,7 @@ function renderVault(newId) {
   vSaved.set(progress ? fmtShort(savedAll) : '-');
   vSplits.set(String(hist.length));
   vStreak.set(String(ev ? ev.streak : 0));
+  if (coach && !$('#vaultLine').textContent) $('#vaultLine').textContent = coach.line('vault');
   const pend = pending().filter(h => h.cur === state.cur), owed = pend.reduce((s, h) => s + pendingLeft(h), 0);
   let vp = $('#vaultPending');
   if (!vp) { vp = document.createElement('div'); vp.id = 'vaultPending'; vp.className = 'vault-pending'; $('.vault-hero').appendChild(vp); }
@@ -971,11 +1018,13 @@ function showSheet(el, { onClose } = {}) {
   scrim.classList.remove('out'); scrim.hidden = false;
   el.classList.remove('out'); el.style.transform = ''; el.hidden = false; el.scrollTop = 0;
   openSheetRef = { el, onClose, tok };
+  document.body.classList.add('sheet-open');
   Sound.play('open'); Haptics.light();
 }
 function closeSheet(instant = false) {
   const s = openSheetRef; if (!s) return;
   openSheetRef = null;
+  document.body.classList.remove('sheet-open');
   try { s.onClose && s.onClose(); } catch (e) { console.warn(e); }
   if (document.activeElement && s.el.contains(document.activeElement)) document.activeElement.blur();
   if (instant || reduce) { s.el.hidden = true; scrim.hidden = true; return; }
@@ -990,11 +1039,13 @@ function closeSheet(instant = false) {
 scrim.addEventListener('click', () => closeSheet());
 addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 // drag down to dismiss
+// Only the grab handle drags, so the rest of the sheet scrolls like a normal list.
 $$('.sheet').forEach(sh => {
   let y0 = null, dy = 0;
   sh.addEventListener('pointerdown', e => {
-    if (sh.scrollTop > 0 || e.target.closest('input,select,button,label,.kp-grid')) return;
+    if (!e.target.closest('.grab')) return;
     y0 = e.clientY; dy = 0; sh.classList.add('dragging');
+    try { e.target.setPointerCapture(e.pointerId); } catch (_) {}
   });
   sh.addEventListener('pointermove', e => {
     if (y0 == null) return;
