@@ -5,9 +5,10 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const NOTES = ['#D0263F', '#8E4FD0', '#DB7326', '#1F9C95'];
-const C = 2 * Math.PI * 19, Q = C / 4, GAP = 6;
-const ROT = -135 + (GAP / C) * 180; // centre the gaps on the diagonals so the blade passes through them
+const RED = '#D0263F', PURPLE = '#8E4FD0';
+const NOTES = [PURPLE, RED]; // ring halves: £20 purple bottom-right, £50 red top-left
+const C = 2 * Math.PI * 19, Q = C / 2, GAP = 6;
+const ROT = -45 + (GAP / C) * 180; // centre the gaps on the diagonals so the blade passes through them
 
 function mark(uid) {
   // The disc is sliced along the diagonal and the two halves slide apart, with a blade glint in the gap.
@@ -35,10 +36,8 @@ function tileSVG(size, markScale) {
   </defs>
   <rect width="${size}" height="${size}" fill="url(#bg)"/>
   <g filter="url(#blur)" opacity=".55">
-    <circle cx="${size * .38}" cy="${size * .4}" r="${size * .16}" fill="${NOTES[0]}"/>
-    <circle cx="${size * .62}" cy="${size * .4}" r="${size * .16}" fill="${NOTES[1]}"/>
-    <circle cx="${size * .38}" cy="${size * .62}" r="${size * .16}" fill="${NOTES[3]}"/>
-    <circle cx="${size * .62}" cy="${size * .62}" r="${size * .16}" fill="${NOTES[2]}"/>
+    <circle cx="${size * .36}" cy="${size * .38}" r="${size * .2}" fill="${RED}"/>
+    <circle cx="${size * .64}" cy="${size * .62}" r="${size * .2}" fill="${PURPLE}"/>
   </g>
   <svg x="${o}" y="${o}" width="${m}" height="${m}" viewBox="0 0 48 48">${mark('t')}</svg>
 </svg>`;
@@ -53,10 +52,10 @@ function splashHTML(w, h, dpr) {
   return `<!doctype html><html><head><style>${fontCSS}
   html,body{margin:0;width:${cw}px;height:${ch}px;background:radial-gradient(80% 55% at 50% 42%,#1B1822,#0B0A0E 60%,#060609);overflow:hidden}
   .w{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${Math.round(logo * .16)}px}
-  .glow{position:absolute;width:${logo * 2}px;height:${logo * 2}px;left:50%;top:50%;transform:translate(-50%,-62%);filter:blur(${logo * .28}px);opacity:.45;background:conic-gradient(from -45deg,${NOTES[0]},${NOTES[1]},${NOTES[2]},${NOTES[3]},${NOTES[0]});border-radius:50%}
+  .glow{position:absolute;width:${logo * 2}px;height:${logo * 2}px;left:50%;top:50%;transform:translate(-50%,-62%);filter:blur(${logo * .28}px);opacity:.45;background:linear-gradient(135deg,${RED},${PURPLE});border-radius:50%}
   svg{position:relative;width:${logo}px;height:${logo}px}
   h1{position:relative;margin:0;font-family:BSD;font-weight:900;font-size:${Math.round(logo * .38)}px;letter-spacing:.06em;color:#F2F0F5;text-transform:uppercase;line-height:1}
-  h1 b{font-weight:900;background:linear-gradient(90deg,${NOTES.join(',')});-webkit-background-clip:text;background-clip:text;color:transparent}
+  h1 b{font-weight:900;background:linear-gradient(90deg,#FF4B62,#B98AF5);-webkit-background-clip:text;background-clip:text;color:transparent}
   p{position:relative;margin:0;font-family:JBM;font-size:${Math.round(logo * .07)}px;letter-spacing:.32em;color:#8D8797;text-transform:uppercase}
   </style></head><body><div class="w"><div class="glow"></div><svg viewBox="0 0 48 48">${mark('s')}</svg><h1>Clean <b>Cut</b></h1><p>Paycheck splitter</p></div></body></html>`;
 }

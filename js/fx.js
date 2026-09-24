@@ -10,7 +10,7 @@ const C = {
   soft: '#FF8095', n1: '#8A0D27', n2: '#5A0819', n3: '#1E0A10',
 };
 let CONFETTI_COLORS = [];
-function rebuildConfetti() { CONFETTI_COLORS = [C.crimson, C.hi, '#F4ECEE', '#9C8E93', C.crimson, C.soft, '#46383E', '#FFFFFF', C.deep]; }
+function rebuildConfetti() { CONFETTI_COLORS = [C.crimson, C.hi, '#F4ECEE', '#9C8E93', C.crimson, C.soft, '#46383E', '#FFFFFF', C.deep, C.alt || C.hi, C.altHi || C.soft, C.alt || C.crimson]; }
 rebuildConfetti();
 // Accent follows the app's note theme: { crimson, hi, deep, soft, n1, n2, n3 }.
 export function setPalette(p) { Object.assign(C, p || {}); rebuildConfetti(); }
@@ -256,6 +256,16 @@ function renderNoteFront(w, h, dpr, note) {
   // top bevel highlight
   g.strokeStyle = 'rgba(255,255,255,0.18)'; g.lineWidth = 1;
   rrect(g, 0.5, 0.5, w - 1, h - 1, rad); g.stroke();
+  return c;
+}
+
+function imageFront(img, w, h, dpr) {
+  const c = mkCanvas(w * dpr, h * dpr);
+  const g = c.getContext('2d');
+  g.scale(dpr, dpr);
+  rrect(g, 0, 0, w, h, Math.min(12, h * 0.08));
+  g.clip();
+  try { g.drawImage(img, 0, 0, w, h); } catch (e) {}
   return c;
 }
 
@@ -780,7 +790,8 @@ export function createFx(canvas, { reduceMotion = false } = {}) {
     const total = n > 1 ? n - 1 : 1;
     const { xs, ws } = computeWidths(pieces, w);
 
-    const front = renderNoteFront(w, h, dpr, note);
+    // The app can hand over a pre-rendered banknote image; otherwise draw the procedural one.
+    const front = note.image ? imageFront(note.image, w, h, dpr) : renderNoteFront(w, h, dpr, note);
     const back = renderNoteBack(w, h, dpr);
     const shadow = renderShadow(w, h);
 

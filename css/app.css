@@ -21,6 +21,10 @@
   --n1:#8A1227;
   --n2:#560A18;
   --n3:#1D0A10;
+  /* the other note, always there as a second accent */
+  --alt:#8E4FD0;
+  --alt-hi:#B98AF5;
+  --b1:142,79,208;
   --glass:rgba(21,19,26,.84);
   --glass-2:rgba(29,26,35,.88);
   --display:"Big Shoulders Display","Oswald","Arial Narrow",Impact,sans-serif;
@@ -58,8 +62,8 @@ button{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-se
 .mark .half-b{transform:translate(1.7px,1.7px)}
 .mark .blade{opacity:.8;stroke-dasharray:60;stroke-dashoffset:0}
 /* boot: arcs deal in, the core lands, the blade flashes through, the halves slide apart */
-.boot-logo .arc{stroke-dasharray:0 120;animation:arcIn .55s var(--ease-out) forwards;animation-delay:calc(var(--i) * 70ms)}
-@keyframes arcIn{to{stroke-dasharray:23.85 95.53}}
+.boot-logo .arc{stroke-dasharray:0 120;animation:arcIn .55s var(--ease-out) forwards;animation-delay:calc(var(--i) * 120ms)}
+@keyframes arcIn{to{stroke-dasharray:53.69 65.69}}
 .boot-logo .core{transform-origin:24px 24px;transform:scale(0);animation:corePop .45s var(--spring) .3s forwards}
 .boot-logo .half-a,.boot-logo .half-b{transform:none;animation:halfA .45s var(--spring) .82s forwards}
 .boot-logo .half-b{animation-name:halfB}
@@ -189,7 +193,7 @@ body.done .donut-center .odo{text-shadow:0 0 30px rgba(255,255,255,.35)}
 .meter-top{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
 .meter-top b{color:var(--text);font-weight:600}
 .bar{height:8px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
-.bar i{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--crimson-deep),var(--crimson),var(--crimson-hi));transition:width .7s var(--ease-out);box-shadow:0 0 16px rgba(var(--a1),.6);overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--crimson-deep),var(--crimson),var(--alt-hi));transition:width .7s var(--ease-out);box-shadow:0 0 16px rgba(var(--a1),.6);overflow:hidden}
 .bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:sheen 2.2s linear infinite;transform:translateX(-100%)}
 @keyframes sheen{to{transform:translateX(100%)}}
 body.over .meter .bar i{background:var(--crimson-hi);animation:alarmbar .8s ease-in-out infinite}
@@ -469,7 +473,7 @@ body.sheet-open{overflow:hidden}
 .rank-badge span{position:relative;z-index:1;font-family:var(--display);font-weight:900;font-size:48px;text-shadow:0 2px 10px rgba(0,0,0,.5)}
 .rank-title{margin:0;font-family:var(--display);font-weight:900;font-size:clamp(40px,12vw,64px);text-transform:uppercase;line-height:.95;letter-spacing:.02em;text-shadow:0 0 30px rgba(var(--a1),.5)}
 .xpbar{width:100%;max-width:420px;height:12px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;position:relative;margin-top:8px}
-.xpbar i{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--crimson-deep),var(--crimson),var(--crimson-hi));box-shadow:0 0 18px var(--crimson);transition:width 1.2s var(--ease-out);overflow:hidden}
+.xpbar i{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--crimson-deep),var(--crimson),var(--alt-hi));box-shadow:0 0 18px var(--crimson);transition:width 1.2s var(--ease-out);overflow:hidden}
 .xpbar i::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 10px,rgba(255,255,255,.15) 10px 20px);animation:stripes 1s linear infinite}
 @keyframes stripes{to{background-position:23px 0}}
 .xp-meta{display:flex;justify-content:space-between;width:100%;max-width:420px;font-family:var(--mono);font-size:11px;color:var(--muted)}
@@ -570,9 +574,7 @@ input,textarea,select{-webkit-user-select:text;user-select:text}
 #sweepChips .chip{flex:none}
 
 /* ---------- note themes (Bank of England note colours, dark UI) ---------- */
-:root[data-note="20"]{--crimson:#8E4FD0;--crimson-hi:#B98AF5;--crimson-deep:#3E1F63;--acc-soft:#D9C2FA;--a1:142,79,208;--a2:185,138,245;--a3:62,31,99;--n1:#5E2E96;--n2:#3A1B60;--n3:#150D20}
-:root[data-note="10"]{--crimson:#DB7326;--crimson-hi:#FFA257;--crimson-deep:#6A320C;--acc-soft:#FFD2A8;--a1:219,115,38;--a2:255,162,87;--a3:106,50,12;--n1:#96470F;--n2:#5E2B09;--n3:#1E120A}
-:root[data-note="5"]{--crimson:#1F9C95;--crimson-hi:#4FD6CE;--crimson-deep:#0E4A47;--acc-soft:#B2EEE9;--a1:31,156,149;--a2:79,214,206;--a3:14,74,71;--n1:#12706A;--n2:#0B4642;--n3:#0A1A19}
+:root[data-note="20"]{--alt:#D0263F;--alt-hi:#FF4B62;--b1:208,38,63;--crimson:#8E4FD0;--crimson-hi:#B98AF5;--crimson-deep:#3E1F63;--acc-soft:#D9C2FA;--a1:142,79,208;--a2:185,138,245;--a3:62,31,99;--n1:#5E2E96;--n2:#3A1B60;--n3:#150D20}
 body,.note,.btn-primary,.chip,.cut-track,.tabbar,.pending-strip{transition-property:background-color,border-color,color,box-shadow,transform,opacity;transition-duration:.5s}
 .note-denom{position:absolute;right:14px;bottom:30px;font-family:var(--display);font-weight:900;font-size:110px;line-height:.8;color:transparent;-webkit-text-stroke:1.5px rgba(var(--a2),.28);pointer-events:none;letter-spacing:-.02em}
 .set-notes{flex-wrap:wrap;cursor:default}
@@ -580,9 +582,26 @@ body,.note,.btn-primary,.chip,.cut-track,.tabbar,.pending-strip{transition-prope
 .note-pick button{--nc:#D0263F;width:52px;height:34px;border-radius:8px;border:2px solid transparent;background:linear-gradient(135deg,var(--nc),color-mix(in srgb,var(--nc) 45%,#000));display:grid;place-items:center;transition:transform .3s var(--spring),border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
 .note-pick button::after{content:"";position:absolute;inset:3px;border:1px solid rgba(255,255,255,.25);border-radius:5px}
 .note-pick button i{font-style:normal;font-family:var(--display);font-weight:900;font-size:15px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
-.note-pick [data-note="20"]{--nc:#8E4FD0}.note-pick [data-note="10"]{--nc:#DB7326}.note-pick [data-note="5"]{--nc:#1F9C95}
+.note-pick [data-note="20"]{--nc:#8E4FD0}
 .note-pick button[aria-pressed="true"]{border-color:#fff;transform:translateY(-2px) scale(1.06);box-shadow:0 6px 18px -4px var(--nc)}
 .note-pick button:active{transform:scale(.92)}
 /* brand wordmark: "Cut" wears all four notes, whatever theme is picked */
-.hdr-word b,.boot-word span:last-child{background:linear-gradient(90deg,#FF4B62,#B98AF5 40%,#FFA257 70%,#4FD6CE);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.hdr-word b,.boot-word span:last-child{background:linear-gradient(90deg,#FF4B62,#B98AF5);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
 .boot-word span:last-child{filter:drop-shadow(0 0 18px rgba(185,138,245,.35))}
+
+/* ---------- banknotes ---------- */
+.note{background:var(--n3)}
+.note-art{position:absolute;inset:0;pointer-events:none}
+.note-art svg{display:block;width:100%;height:100%}
+.note-top,.note-amt,.note-bottom,.example-tag{z-index:1}
+.note .micro{color:rgba(255,255,255,.72);font-size:10px;letter-spacing:.08em;text-transform:none}
+.note-amt{text-shadow:0 2px 18px rgba(0,0,0,.55)}
+.cash{position:relative;display:flex;align-items:center;gap:10px;min-height:30px}
+.cash .pile{position:relative;height:28px;flex:none;width:calc(48px + (var(--n) - 1) * 8px)}
+.cash .pile svg{position:absolute;top:1px;left:calc(var(--k) * 8px);width:48px;height:25.6px;border-radius:3px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.65));transform:rotate(calc((var(--k) - (var(--n) - 1) / 2) * 3deg));transform-origin:50% 120%}
+.cash .pile svg.drop{animation:noteDrop .45s var(--spring) backwards;animation-delay:calc(var(--k) * 40ms)}
+@keyframes noteDrop{from{opacity:0;transform:translateY(-18px) rotate(-12deg) scale(1.1)}}
+.cash small{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.cash small b{color:var(--text);font-weight:600}
+.note .note-edit{display:none}
+.note .note-serial{color:rgba(255,255,255,.8)}

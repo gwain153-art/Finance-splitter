@@ -16,6 +16,7 @@ const openBankRun = await soft('./bankrun.js', m => m.openBankRun, null);
 const createVaultDoor = await soft('./vaultdoor.js', m => m.createVaultDoor, null);
 const coach = await soft('./coach.js', m => m, null);
 const theme = await soft('./theme.js', m => m, null);
+const banknote = await soft('./banknote.js', m => m, null);
 const fxMod = await soft('./fx.js', m => m, null);
 const pwa = await soft('./pwa.js', m => m, { registerSW: noop, isStandalone: () => false, isIOS: () => false, requestPersistentStorage: async () => false });
 
@@ -100,9 +101,25 @@ function syncMood() { if (!dragging && !splitting) bg.setMood(baseMood()); }
    ========================================================= */
 const payOdo = odo($('#payOdo'));
 const fmtPayDigits = v => v.toLocaleString('en-GB', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+let artKey = '', noteImg = null;
+function renderNoteArt(key) {
+  if (!banknote || artKey === key) return;
+  artKey = key;
+  $('#noteArt').innerHTML = banknote.noteSVG(key, { hero: true, serial: `CC${key} ${String(nextSerialN()).padStart(6, '0')}` });
+}
+// "48 x £50 · 1 x £20 · +£10.00": how an amount comes out in notes.
+function cashLine(amt) {
+  if (!banknote) return '';
+  const { n50, n20, change } = banknote.breakdown(amt), c = state.cur, bits = [];
+  if (n50) bits.push(`${n50} × ${c}50`);
+  if (n20) bits.push(`${n20} × ${c}20`);
+  if (change > 0) bits.push(`+${fmt(change)}`);
+  return bits.join(' · ') || fmt(0);
+}
 function renderNote() {
   $('#noteSym').textContent = state.cur;
   payOdo.set(fmtPayDigits(state.pay));
+  $('#noteCash').textContent = state.pay > 0 ? '= ' + cashLine(state.pay) : 'Tap to put your pay in';
   $('#noteSerial').textContent = serial(nextSerialN());
   $('#exampleTag').hidden = !!state.touched;
 }
@@ -286,6 +303,7 @@ function cardEl(b, pay) {
       </div>
     </div>
     <input class="b-range" id="rng-${b.id}" type="range" min="0" max="${rangeMax(b, pay)}" step="${pct ? .5 : 5}" value="${b.value}" aria-label="${esc(b.name)} slider">
+    <div class="cash" aria-hidden="true"><span class="pile p50"></span><span class="pile p20"></span><small></small></div>
     <div class="b-foot tab"><span class="b-share"></span><span class="b-goal"></span><span class="b-year"></span></div>`;
   return el;
 }
@@ -324,6 +342,7 @@ function update() {
     if (+rng.max !== max) rng.max = max;
     rng.style.setProperty('--p', clamp(r.b.value / max * 100, 0, 100) + '%');
     el.style.setProperty('--lvl', (6 + clamp(share, 0, 1) * 94) + '%');
+    renderCash(el, r.amt);
     el.classList.toggle('zero', r.amt <= 0);
   });
   setDonut(c);
@@ -633,6 +652,24 @@ track.addEventListener('keydown', async e => {
   commitCut();
 });
 
+// Fanned stacks of mini £50s and £20s on each bucket. Only redraws when the note count changes.
+function renderCash(el, amt) {
+  const box = el.querySelector('.cash'); if (!box || !banknote) return;
+  const { n50, n20 } = banknote.breakdown(amt);
+  const key = n50 + ':' + n20;
+  if (box.dataset.k === key) return;
+  const prev = (box.dataset.k || '0:0').split(':').map(Number);
+  box.dataset.k = key;
+  const pile = (sel, n, d, had) => {
+    const shown = Math.min(n, 6), p = box.querySelector(sel);
+    p.style.setProperty('--n', Math.max(1, shown));
+    p.hidden = !n;
+    p.innerHTML = Array.from({ length: shown }, (_, k) => `<svg class="${k >= Math.min(had, 6) ? 'drop' : ''}" style="--k:${k}"><use href="#bn-mini-${d}"/></svg>`).join('');
+  };
+  pile('.p50', n50, '50', prev[0]); pile('.p20', n20, '20', prev[1]);
+  box.querySelector('small').innerHTML = amt > 0 ? cashLine(amt).replace(/(\d+) ×/g, '<b>$1</b> ×') : 'Empty';
+}
+
 /* =========================================================
    THE CUT (cutscene)
    ========================================================= */
@@ -674,7 +711,9 @@ async function runSplit() {
 
   if (fx.playSplit) {
     try {
-      await fx.playSplit({ note: { rect: noteRect, amountText: fmt(c.pay), label: 'PAYCHECK', serial: serial(nextSerialN()) }, pieces, onSlash, onHit, onDone: noop });
+      let image = null;
+      try { if (banknote) image = await banknote.noteImage(state.settings.note || '50', { value: state.cur + fmtPayDigits(c.pay), serial: `CC${state.settings.note || '50'} ${String(nextSerialN()).padStart(6, '0')}` }); } catch (e) {}
+      await fx.playSplit({ note: { rect: noteRect, amountText: fmt(c.pay), label: 'PAYCHECK', serial: serial(nextSerialN()), image }, pieces, onSlash, onHit, onDone: noop });
     } catch (e) { console.warn(e); pieces.forEach((_, i) => onHit(i)); }
   } else {
     onSlash(0, 1);
@@ -1150,10 +1189,13 @@ $('#resetBtn').addEventListener('click', e => {
 function applyTheme(key, { celebrate = false } = {}) {
   if (!theme) return;
   const t = theme.applyNote(key);
-  $('#noteDenom').textContent = String(key);
+  renderNoteArt(key);
   $$('#notePick button').forEach(b => b.setAttribute('aria-pressed', b.dataset.note === String(key)));
-  try { fxMod && fxMod.setPalette && fxMod.setPalette({ crimson: t.main, hi: t.hi, deep: t.deep, soft: t.soft, n1: t.n1, n2: t.n2, n3: t.n3 }); } catch (e) {}
-  try { bg.setAccent && bg.setAccent({ crim: theme.rgb01(t.main), hi: theme.rgb01(t.hi), deep: theme.rgb01(t.deep), blood: theme.rgb01(t.blood) }); } catch (e) {}
+  const o = theme.otherOf(key);
+  try { fxMod && fxMod.setPalette && fxMod.setPalette({ crimson: t.main, hi: t.hi, deep: t.deep, soft: t.soft, n1: t.n1, n2: t.n2, n3: t.n3, alt: o.main, altHi: o.hi }); } catch (e) {}
+  // Smoke lit in the other note's colour, veins in the lead: both notes in the background.
+  try { bg.setAccent && bg.setAccent({ crim: theme.rgb01(t.main), hi: theme.rgb01(t.hi), deep: theme.rgb01(t.deep), blood: theme.rgb01(o.blood) }); } catch (e) {}
+  noteImg = null;
   if (celebrate) {
     const n = centre($('#notePick'));
     fx.flash(.35); fx.sparkBurst(n.x, n.y, { color: t.hi, count: 40, power: 1 }); bg.pulse(innerWidth / 2, innerHeight / 2, 1.2);
@@ -1223,8 +1265,11 @@ function openVaultDoor() {
   } catch (e) { console.warn(e); }
 }
 
+if (banknote) document.body.insertAdjacentHTML('afterbegin', banknote.miniSprite());
 applySettings();
 renderAll();
+// Warm the embedded fonts so the first cut doesn't wait on them.
+if (banknote) setTimeout(() => banknote.noteImage('50', { value: '£0' }).catch(() => {}), 2500);
 // After a rank reset, let the achievements you still qualify for pop again instead of unlocking silently.
 if (justReset) setTimeout(() => processProgress(), 1700); else processProgress({ quiet: true });
 note.classList.add('idle');

@@ -5,10 +5,14 @@ const V1_KEY = 'crimson-cut-v1';
 
 export const CUR = { '£': 'GBP', '$': 'USD', '€': 'EUR' };
 export const FREQ = { weekly: 52, fortnightly: 26, monthly: 12 };
-// Bucket colours: the four Bank of England notes, then lighter tints of each.
-export const SHADES = ['#D0263F', '#8E4FD0', '#DB7326', '#1F9C95', '#FF7A8C', '#B98AF5', '#FFA257', '#5FD6CE'];
-const OLD_SHADES = ['#DC143C', '#FF3A5C', '#B8AEB2', '#9E0F2E', '#FF8095', '#6E6468', '#E8E0E2', '#5E0B1D'];
-const reshade = c => { const i = OLD_SHADES.indexOf(String(c).toUpperCase()); return i >= 0 ? SHADES[i] : c; };
+// Bucket colours: £50 reds, £20 purples, and silver. Nothing else.
+export const SHADES = ['#D0263F', '#8E4FD0', '#FF6B7E', '#B98AF5', '#8A1227', '#5E2E96', '#B9B4C2', '#6E6878'];
+// Older palettes (crimson v1/v2, four-note v3) map onto the new one.
+const REMAP = {
+  '#DC143C': '#D0263F', '#FF3A5C': '#FF6B7E', '#B8AEB2': '#B9B4C2', '#9E0F2E': '#8A1227', '#FF8095': '#FF6B7E', '#6E6468': '#6E6878', '#E8E0E2': '#B9B4C2', '#5E0B1D': '#5E2E96',
+  '#DB7326': '#FF6B7E', '#1F9C95': '#B98AF5', '#FF7A8C': '#FF6B7E', '#FFA257': '#B9B4C2', '#5FD6CE': '#5E2E96'
+};
+const reshade = c => REMAP[String(c).toUpperCase()] || c;
 
 export const uid = () => Math.random().toString(36).slice(2, 9);
 export const round2 = n => Math.round(n * 100) / 100;
@@ -30,10 +34,10 @@ export function defaults() {
     buckets: [
       { id: uid(), name: 'Rent & bills', mode: 'fixed', value: 950, color: '#D0263F', goal: null, auto: true },
       { id: uid(), name: 'Savings', mode: 'pct', value: 20, color: '#8E4FD0', goal: 5000 },
-      { id: uid(), name: 'Investing', mode: 'pct', value: 10, color: '#1F9C95', goal: null },
-      { id: uid(), name: 'Groceries', mode: 'pct', value: 12, color: '#DB7326', goal: null },
-      { id: uid(), name: 'Fun money', mode: 'pct', value: 10, color: '#FF7A8C', goal: null },
-      { id: uid(), name: 'Emergency fund', mode: 'pct', value: 5, color: '#5FD6CE', goal: 1500 }
+      { id: uid(), name: 'Investing', mode: 'pct', value: 10, color: '#B98AF5', goal: null },
+      { id: uid(), name: 'Groceries', mode: 'pct', value: 12, color: '#FF6B7E', goal: null },
+      { id: uid(), name: 'Fun money', mode: 'pct', value: 10, color: '#B9B4C2', goal: null },
+      { id: uid(), name: 'Emergency fund', mode: 'pct', value: 5, color: '#5E2E96', goal: 1500 }
     ]
   };
 }
@@ -43,6 +47,7 @@ function normalise(s) {
   const out = Object.assign(d, s);
   out.v = 2;
   out.settings = Object.assign(defaults().settings, s.settings || {});
+  if (out.settings.note !== '20') out.settings.note = '50';
   if (typeof s.sound === 'boolean') out.settings.sound = s.sound;
   delete out.sound;
   out.unlocked = s.unlocked && typeof s.unlocked === 'object' ? s.unlocked : {};

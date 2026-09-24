@@ -5,10 +5,8 @@
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
   <g filter="url(#blur)" opacity=".55">
-    <circle cx="194.56" cy="204.8" r="81.92" fill="#D0263F"/>
-    <circle cx="317.44" cy="204.8" r="81.92" fill="#8E4FD0"/>
-    <circle cx="194.56" cy="317.44" r="81.92" fill="#1F9C95"/>
-    <circle cx="317.44" cy="317.44" r="81.92" fill="#DB7326"/>
+    <circle cx="184.32" cy="194.56" r="102.4" fill="#D0263F"/>
+    <circle cx="327.68" cy="317.44" r="102.4" fill="#8E4FD0"/>
   </g>
   <svg x="87.03999999999999" y="87.03999999999999" width="337.92" height="337.92" viewBox="0 0 48 48"><defs>
     <radialGradient id="svt" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#D9D5DF"/><stop offset="1" stop-color="#7E7788"/></radialGradient>
@@ -16,7 +14,7 @@
     <clipPath id="cbt"><polygon points="58,-10 58,58 -10,58"/></clipPath>
     <linearGradient id="blt" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
   </defs>
-  <g transform="translate(-1.7 -1.7)"><g clip-path="url(#cat)"><g transform="rotate(-125.95 24 24)"><circle cx="24" cy="24" r="19" fill="none" stroke="#D0263F" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="0.00"/><circle cx="24" cy="24" r="19" fill="none" stroke="#8E4FD0" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-29.85"/><circle cx="24" cy="24" r="19" fill="none" stroke="#DB7326" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-59.69"/><circle cx="24" cy="24" r="19" fill="none" stroke="#1F9C95" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-89.54"/></g><circle cx="24" cy="24" r="10.5" fill="url(#svt)"/></g></g>
-  <g transform="translate(1.7 1.7)"><g clip-path="url(#cbt)"><g transform="rotate(-125.95 24 24)"><circle cx="24" cy="24" r="19" fill="none" stroke="#D0263F" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="0.00"/><circle cx="24" cy="24" r="19" fill="none" stroke="#8E4FD0" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-29.85"/><circle cx="24" cy="24" r="19" fill="none" stroke="#DB7326" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-59.69"/><circle cx="24" cy="24" r="19" fill="none" stroke="#1F9C95" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="23.85 95.54" stroke-dashoffset="-89.54"/></g><circle cx="24" cy="24" r="10.5" fill="url(#svt)"/></g></g>
+  <g transform="translate(-1.7 -1.7)"><g clip-path="url(#cat)"><g transform="rotate(-35.95 24 24)"><circle cx="24" cy="24" r="19" fill="none" stroke="#8E4FD0" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="53.69 65.69" stroke-dashoffset="0.00"/><circle cx="24" cy="24" r="19" fill="none" stroke="#D0263F" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="53.69 65.69" stroke-dashoffset="-59.69"/></g><circle cx="24" cy="24" r="10.5" fill="url(#svt)"/></g></g>
+  <g transform="translate(1.7 1.7)"><g clip-path="url(#cbt)"><g transform="rotate(-35.95 24 24)"><circle cx="24" cy="24" r="19" fill="none" stroke="#8E4FD0" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="53.69 65.69" stroke-dashoffset="0.00"/><circle cx="24" cy="24" r="19" fill="none" stroke="#D0263F" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="53.69 65.69" stroke-dashoffset="-59.69"/></g><circle cx="24" cy="24" r="10.5" fill="url(#svt)"/></g></g>
   <path d="M3 45 L45 3" stroke="url(#blt)" stroke-width=".9" stroke-linecap="round"/></svg>
 </svg>
