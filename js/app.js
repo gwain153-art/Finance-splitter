@@ -1,6 +1,7 @@
 import {
   state, save, compute, fmt, fmtShort, mkFormat, parseNum, esc, uid, round2, clamp,
-  SHADES, FREQ, bucketTotal, nextPayday, exportJSON, replaceState, resetState
+  SHADES, FREQ, bucketTotal, nextPayday, exportJSON, replaceState, resetState,
+  pending, pendingLeft, setPartDone, nextSerialN
 } from './state.js';
 
 /* ---------- optional modules: the app still runs if one of them fails ---------- */
@@ -11,6 +12,8 @@ const Haptics = await soft('./haptics.js', m => m.Haptics, { install: noop, tap:
 const createBackground = await soft('./bg.js', m => m.createBackground, null);
 const createFx = await soft('./fx.js', m => m.createFx, null);
 const progress = await soft('./progress.js', m => m, null);
+const openBankRun = await soft('./bankrun.js', m => m.openBankRun, null);
+const createVaultDoor = await soft('./vaultdoor.js', m => m.createVaultDoor, null);
 const pwa = await soft('./pwa.js', m => m, { registerSW: noop, isStandalone: () => false, isIOS: () => false, requestPersistentStorage: async () => false });
 
 const $ = s => document.querySelector(s);
@@ -97,7 +100,7 @@ const fmtPayDigits = v => v.toLocaleString('en-GB', { minimumFractionDigits: v %
 function renderNote() {
   $('#noteSym').textContent = state.cur;
   payOdo.set(fmtPayDigits(state.pay));
-  $('#noteSerial').textContent = serial(state.history.length + 1);
+  $('#noteSerial').textContent = serial(nextSerialN());
   $('#exampleTag').hidden = !!state.touched;
 }
 const serial = n => `CC-${String(n).padStart(4, '0')}`;
@@ -265,6 +268,7 @@ function cardEl(b, pay) {
     <div class="b-row1">
       <button class="swatch" aria-label="Change colour"></button>
       <input class="b-name" id="name-${b.id}" value="${esc(b.name)}" maxlength="28" aria-label="Bucket name" enterkeyhint="done">
+      ${b.auto ? '<span class="b-auto" title="Moves automatically">AUTO</span>' : ''}
       <button class="more" aria-label="Options for ${esc(b.name)}">${DOTS}</button>
     </div>
     <div class="b-row2">
@@ -462,6 +466,7 @@ function openBucketSheet(id) {
   const sheet = $('#bucketSheet'); sheet.style.setProperty('--c', b.color);
   $('#bsName').value = b.name; $('#bsCur').textContent = state.cur;
   $('#bsGoal').value = b.goal ? String(b.goal) : '';
+  $('#bsAuto').checked = !!b.auto;
   $('#bsColors').innerHTML = SHADES.map(s => `<button style="--c:${s}" data-c="${s}" aria-label="Colour ${s}" aria-pressed="${s === b.color}"></button>`).join('');
   renderBsProgress(b);
   const del = $('#bsDelete'); del.classList.remove('armed'); del.textContent = 'Delete bucket';
@@ -474,6 +479,12 @@ function renderBsProgress(b) {
 const bsB = () => state.buckets.find(x => x.id === bsId);
 $('#bsName').addEventListener('input', e => { const b = bsB(); if (b) { b.name = e.target.value; touch(); } });
 $('#bsGoal').addEventListener('input', e => { const b = bsB(); if (b) { const v = parseNum(e.target.value); b.goal = v > 0 ? v : null; touch(); renderBsProgress(b); } });
+$('#bsAuto').addEventListener('change', e => {
+  const b = bsB(); if (!b) return;
+  b.auto = e.target.checked; touch();
+  Sound.play('toggle', { on: b.auto }); Haptics.light();
+  if (b.auto) toast(`${b.name || 'This bucket'} will come pre-stamped`);
+});
 $('#bsColors').addEventListener('click', e => {
   const s = e.target.closest('[data-c]'); const b = bsB(); if (!s || !b) return;
   b.color = s.dataset.c; $('#bucketSheet').style.setProperty('--c', b.color);
@@ -616,7 +627,7 @@ async function runSplit() {
 
   if (fx.playSplit) {
     try {
-      await fx.playSplit({ note: { rect: noteRect, amountText: fmt(c.pay), label: 'PAYCHECK', serial: serial(state.history.length + 1) }, pieces, onSlash, onHit, onDone: noop });
+      await fx.playSplit({ note: { rect: noteRect, amountText: fmt(c.pay), label: 'PAYCHECK', serial: serial(nextSerialN()) }, pieces, onSlash, onHit, onDone: noop });
     } catch (e) { console.warn(e); pieces.forEach((_, i) => onHit(i)); }
   } else {
     onSlash(0, 1);
@@ -624,7 +635,10 @@ async function runSplit() {
   }
 
   // bank it
-  state.history.unshift({ id: uid(), t: Date.now(), pay: c.pay, cur: state.cur, freq: state.freq, parts: live.map(r => ({ id: r.b.id, name: r.b.name || 'Untitled', amt: r.amt, color: r.b.color })) });
+  const parts = live.map(r => ({ id: r.b.id, name: r.b.name || 'Untitled', amt: r.amt, color: r.b.color, auto: !!r.b.auto, done: !!r.b.auto }));
+  const allAuto = parts.every(p => p.auto);
+  const entry = { id: uid(), n: nextSerialN(), t: Date.now(), pay: c.pay, cur: state.cur, freq: state.freq, parts, status: allAuto ? 'banked' : 'pending', bankedAt: allAuto ? Date.now() : null };
+  state.history.unshift(entry);
   state.history = state.history.slice(0, 500);
   touch();
   const after = progress ? progress.evaluate(state) : null;
@@ -633,20 +647,82 @@ async function runSplit() {
   if (!reduce) { fx.confetti(innerWidth / 2, innerHeight * .42, { count: 200 }); fx.shockwave(innerWidth / 2, innerHeight * .42, { radius: Math.max(innerWidth, innerHeight) * .7 }); }
   $('#stampSub').textContent = `${fmt(c.pay)} into ${live.length} bucket${live.length === 1 ? '' : 's'}`;
   $('#stampXp').textContent = before && after ? `+${Math.round(after.xp - before.xp)} XP` : '';
+  const toMove = parts.filter(p => !p.auto);
+  $('#stampDone').textContent = allAuto ? 'Nice' : 'Bank it';
+  $('#stampLater').hidden = allAuto;
   $('#stamp').hidden = false;
-  await new Promise(res => {
-    const done = () => { $('#stampDone').removeEventListener('click', done); res(); };
-    $('#stampDone').addEventListener('click', done);
+  const choice = await new Promise(res => {
+    const bank = () => { off(); res('bank'); }, later = () => { off(); res('later'); };
+    const off = () => { $('#stampDone').removeEventListener('click', bank); $('#stampLater').removeEventListener('click', later); };
+    $('#stampDone').addEventListener('click', bank); $('#stampLater').addEventListener('click', later);
   });
-  Sound.play('close'); Haptics.light();
+  Haptics.light();
+  if (choice === 'bank' && !allAuto && openBankRun) {
+    // The run deals in over the stage, then the stage quietly goes away underneath it.
+    const run = bankRun(entry, { onDone: finishSplit });
+    setTimeout(() => { stage.hidden = true; $('#stamp').hidden = true; }, reduce ? 0 : 450);
+    void run;
+    return;
+  }
+  Sound.play('close');
+  if (!allAuto) toast(`${toMove.length} transfer${toMove.length === 1 ? '' : 's'} waiting. Bank them when you've moved the money.`);
   stage.classList.add('out');
   await wait(reduce ? 0 : 340);
   stage.hidden = true; stage.classList.remove('out');
-  splitting = false;
-  renderNote(); update(); renderHeader();
-  live.forEach((r, i) => setTimeout(() => hitCard(r.b.id, i), reduce ? 0 : 80 * i));
-  processProgress();
+  finishSplit();
+  function finishSplit() {
+    splitting = false;
+    renderNote(); update(); renderHeader(); renderPending();
+    live.forEach((r, i) => setTimeout(() => hitCard(r.b.id, i), reduce ? 0 : 80 * i));
+    processProgress();
+  }
 }
+
+/* =========================================================
+   TRANSFER RUN
+   ========================================================= */
+let bankOpen = false;
+function bankRun(entry, { onDone } = {}) {
+  if (!openBankRun || bankOpen) return null;
+  bankOpen = true;
+  return openBankRun({
+    entry: { ...entry, serial: serial(entry.n || 0) },
+    fmt, Sound, Haptics, fx, bg, reduceMotion: reduce,
+    onToggle(i, done) {
+      setPartDone(entry, i, done);
+      renderPending(); renderHeader();
+      if (tab === 'vault') renderVault();
+    },
+    onScrap() {
+      state.history = state.history.filter(h => h.id !== entry.id); save();
+      lastLevel = progress ? progress.evaluate(state).level : 1;
+    },
+    onClose(result) {
+      bankOpen = false;
+      stage.hidden = true; stage.classList.remove('out'); $('#stamp').hidden = true;
+      renderPending(); renderNote(); renderHeader(); syncMood();
+      if (tab === 'vault') renderVault();
+      if (result === 'scrapped') toast('Split scrapped. Like it never happened.');
+      if (result === 'later') { const left = pendingLeft(entry); if (left > 0) toast(`${fmt(left)} still to move. It'll wait.`); }
+      if (onDone) onDone(); else processProgress();
+    }
+  });
+}
+function renderPending() {
+  const list = pending();
+  const strip = $('#pendingStrip');
+  $('#vaultDot').hidden = !list.length;
+  if (!list.length) { strip.hidden = true; return; }
+  const left = list.reduce((s, h) => s + pendingLeft(h), 0);
+  const slips = list.reduce((s, h) => s + h.parts.filter(p => !p.done).length, 0);
+  $('#psTitle').textContent = list.length === 1 ? `${slips} transfer${slips === 1 ? '' : 's'} to bank` : `${list.length} splits to bank`;
+  $('#psSub').textContent = `${fmt(left)} still to move`;
+  strip.hidden = false;
+}
+$('#pendingStrip').addEventListener('click', () => {
+  const list = pending(); if (!list.length) return;
+  Sound.play('open'); bankRun(list[0]);
+});
 
 /* =========================================================
    PROGRESS: achievements, rank ups, banners
@@ -725,6 +801,10 @@ function renderHeader() {
   pill.classList.remove('soon', 'today');
   if (!pd) $('#paydayTxt').textContent = 'Set payday';
   else if (pd.days === 0) { $('#paydayTxt').textContent = 'PAYDAY'; pill.classList.add('today'); }
+  const today = !!pd && pd.days === 0;
+  const cutToday = state.history.some(h => new Date(h.t).toDateString() === new Date().toDateString());
+  document.body.classList.toggle('payday', today);
+  $('#paydayBanner').hidden = !today || cutToday;
   else { $('#paydayTxt').textContent = pd.days === 1 ? 'Payday tomorrow' : `Payday in ${pd.days}d`; if (pd.days <= 3) pill.classList.add('soon'); }
 }
 $('#rankPill').addEventListener('click', () => setTab('ranks'));
@@ -744,6 +824,10 @@ function renderVault(newId) {
   vSaved.set(ev ? fmtShort(ev.totals.saved) : '-');
   vSplits.set(String(hist.length));
   vStreak.set(String(ev ? ev.streak : 0));
+  const pend = pending().filter(h => h.cur === state.cur), owed = pend.reduce((s, h) => s + pendingLeft(h), 0);
+  let vp = $('#vaultPending');
+  if (!vp) { vp = document.createElement('div'); vp.id = 'vaultPending'; vp.className = 'vault-pending'; $('.vault-hero').appendChild(vp); }
+  vp.textContent = owed > 0 ? `${fmt(owed)} cut but not moved yet` : '';
 
   // chart
   const last = hist.slice(0, 12).reverse();
@@ -796,16 +880,24 @@ function renderVault(newId) {
   $('#clearBtn').hidden = !state.history.length;
   $('#history').innerHTML = state.history.length ? state.history.slice(0, 100).map(h => {
     const f = new Intl.NumberFormat('en-GB', { style: 'currency', currency: ({ '£': 'GBP', '$': 'USD', '€': 'EUR' })[h.cur] || 'GBP' });
-    return `<li class="h-item${h.id === newId ? ' new' : ''}" data-id="${h.id}">
+    const todo = h.status === 'pending' ? h.parts.filter(p => !p.done).length : 0;
+    const chip = h.status === 'pending' ? `<span class="h-chip pending">${todo} to bank</span>` : `<span class="h-chip banked">Banked${h.bankedAt ? ' ' + esc(dayFmt.format(h.bankedAt)) : ''}</span>`;
+    return `<li class="h-item${h.id === newId ? ' new' : ''}${h.status === 'pending' ? ' pending' : ''}" data-id="${h.id}">
       <time datetime="${new Date(h.t).toISOString()}">${dateFmt.format(h.t)} · ${esc(h.freq)}</time>
       <b class="tab">${esc(f.format(h.pay))}</b>
       <button class="h-del" aria-label="Remove this split"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-      <div class="stack">${h.parts.map(p => `<i style="--c:${p.color};flex:${p.amt}" title="${esc(p.name)} ${esc(f.format(p.amt))}"></i>`).join('')}</div>
+      <div class="stack">${h.parts.map(p => `<i class="${p.done ? '' : 'todo'}" style="--c:${p.color};flex:${p.amt}" title="${esc(p.name)} ${esc(f.format(p.amt))}"></i>`).join('')}</div>
+      ${chip}
     </li>`;
   }).join('') : '<li class="empty">No splits yet</li>';
 }
 $('#history').addEventListener('click', e => {
-  const d = e.target.closest('.h-del'); if (!d) return;
+  const d = e.target.closest('.h-del');
+  if (!d) {
+    const li = e.target.closest('.h-item'); const h = li && state.history.find(x => x.id === li.dataset.id);
+    if (h && openBankRun) { Sound.play('open'); bankRun(h); }
+    return;
+  }
   const li = d.closest('.h-item'), idx = state.history.findIndex(h => h.id === li.dataset.id);
   if (idx < 0) return;
   const [removed] = state.history.splice(idx, 1);
@@ -854,12 +946,13 @@ function renderRanks() {
 let tab = 'split';
 function setTab(t) {
   if (t === tab) return;
+  const order = ['split', 'vault', 'ranks'], dir = order.indexOf(t) > order.indexOf(tab) ? 'from-right' : 'from-left';
   tab = t; document.body.dataset.tab = t;
-  $$('.view').forEach(v => { const on = v.dataset.view === t; v.hidden = !on; if (on && !reduce) { v.classList.remove('in'); void v.offsetWidth; v.classList.add('in'); } });
+  $$('.view').forEach(v => { const on = v.dataset.view === t; v.hidden = !on; v.classList.remove('in', 'from-right', 'from-left'); if (on && !reduce) { void v.offsetWidth; v.classList.add(dir); } });
   $$('#tabbar button').forEach(b => b.toggleAttribute('aria-current', b.dataset.tab === t));
   $$('#tabbar button').forEach(b => { if (b.dataset.tab === t) b.setAttribute('aria-current', 'page'); });
   scrollTo({ top: 0, behavior: 'auto' });
-  if (t === 'vault') renderVault();
+  if (t === 'vault') { renderVault(); openVaultDoor(); }
   if (t === 'ranks') { renderRanks(); $('#ranksDot').hidden = true; }
   Sound.play('tap'); Haptics.light();
 }
@@ -1021,7 +1114,20 @@ function applySettings() {
     enableMotion(false).then(ok => { if (!ok) addEventListener('touchend', () => enableMotion(true), { once: true }); });
   }
 }
-function renderAll() { renderNote(); renderFreq(); renderBuckets(); renderHeader(); renderVault(); renderRanks(); }
+function renderAll() { renderNote(); renderFreq(); renderBuckets(); renderHeader(); renderVault(); renderRanks(); renderPending(); }
+
+/* vault door */
+let door = null, doorBusy = false;
+function openVaultDoor() {
+  if (!createVaultDoor) return;
+  try {
+    if (!door) door = createVaultDoor($('.vault-hero'), { Sound, Haptics, reduceMotion: reduce });
+    if (doorBusy) return;
+    doorBusy = true;
+    door.close();
+    Promise.resolve(door.open()).finally(() => { doorBusy = false; });
+  } catch (e) { console.warn(e); }
+}
 
 applySettings();
 renderAll();
@@ -1047,3 +1153,13 @@ pwa.registerSW(apply => toast('New version ready', { label: 'Update', fn: apply 
 if (pwa.isStandalone()) pwa.requestPersistentStorage();
 setInterval(renderHeader, 60 * 60 * 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) renderHeader(); });
+
+/* logo: slash it for fun */
+let slashes = 0, slashT;
+$('.hdr-brand').addEventListener('click', () => {
+  const c = centre($('.hdr-brand svg'));
+  slashes++; clearTimeout(slashT); slashT = setTimeout(() => { slashes = 0; }, 1200);
+  Sound.play('slash', { i: slashes }); Haptics.heavy();
+  fx.sparkBurst(c.x, c.y, { count: 20 + slashes * 8, power: .6 + slashes * .15 }); bg.pulse(c.x, c.y, .5 + slashes * .1);
+  if (slashes === 5) { fx.flash(.5); fx.confetti(innerWidth / 2, innerHeight * .3, { count: 120 }); Sound.play('fanfare'); toast('Alright, calm down.'); slashes = 0; }
+});

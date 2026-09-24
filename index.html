@@ -71,6 +71,15 @@
   <main class="views">
     <!-- ================= SPLIT ================= -->
     <section class="view" id="view-split" data-view="split">
+      <div class="payday-banner" id="paydayBanner" hidden>
+        <span class="pb-glow" aria-hidden="true"></span>
+        <b>It's payday.</b><span>Put the number in and cut it.</span>
+      </div>
+      <button class="pending-strip" id="pendingStrip" hidden>
+        <i class="ps-dot" aria-hidden="true"></i>
+        <span class="ps-text"><b id="psTitle">1 split to bank</b><small class="tab" id="psSub"></small></span>
+        <span class="ps-go">Bank it<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+      </button>
       <div class="split-grid">
         <div class="col-a">
           <button class="note" id="note" aria-label="Edit paycheck amount">
@@ -188,7 +197,7 @@
 
   <nav class="tabbar" id="tabbar" aria-label="Sections">
     <button data-tab="split" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M4 20 20 4"/></svg><span>Split</span></button>
-    <button data-tab="vault"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 8v1M12 15v1M8 12h1M15 12h1"/></svg><span>Vault</span></button>
+    <button data-tab="vault"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 8v1M12 15v1M8 12h1M15 12h1"/></svg><span>Vault</span><i class="tab-dot" id="vaultDot" hidden></i></button>
     <button data-tab="ranks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg><span>Ranks</span><i class="tab-dot" id="ranksDot" hidden></i></button>
   </nav>
 </div>
@@ -219,6 +228,7 @@
   <span class="eyebrow">Goal (optional)</span>
   <label class="field"><span id="bsCur">£</span><input id="bsGoal" type="text" inputmode="decimal" placeholder="No goal"></label>
   <p class="hint" id="bsProgress"></p>
+  <label class="set-row bs-auto"><span><b>Moves automatically</b><small>Standing order or bank rule already handles it. Pre-stamped in the Transfer Run.</small></span><input type="checkbox" class="tgl" id="bsAuto"></label>
   <div class="bs-actions">
     <button class="ghost danger" id="bsDelete">Delete bucket</button>
     <button class="btn-primary" id="bsDone">Done</button>
@@ -261,6 +271,7 @@
     <p class="tab" id="stampSub"></p>
     <div class="stamp-xp" id="stampXp"></div>
     <button class="btn-primary" id="stampDone">Bank it</button>
+    <button class="stamp-later" id="stampLater">Later</button>
   </div>
 </div>
 

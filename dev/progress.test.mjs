@@ -21,7 +21,7 @@ const base = (over = {}) => ({
 });
 // pay 1000: 500 rent, 300 savings, 200 fun (perfect, 30% saved)
 const split = (t, over = {}) => ({
-  id: 'h' + t, t, pay: 1000, cur: '£', freq: 'weekly',
+  id: 'h' + t, t, pay: 1000, cur: '£', freq: 'weekly', status: 'pending',
   parts: [
     { id: 'b1', name: 'Rent & bills', amt: 500, color: '#000' },
     { id: 'b2', name: 'Savings', amt: 300, color: '#000' },
@@ -61,7 +61,7 @@ test('empty history', () => {
   assert.equal(ev.progress, 0);
   assert.equal(ev.streak, 0);
   assert.deepEqual(ev.totals, { paid: 0, saved: 0, splits: 0, savedPct: 0 });
-  assert.ok(ev.achievements.length >= 25 && ev.achievements.length <= 35);
+  assert.ok(ev.achievements.length >= 25 && ev.achievements.length <= 45);
   const icons = new Set(['blade', 'coin', 'crown', 'flame', 'vault', 'target', 'bolt', 'skull', 'star', 'shield']);
   const ids = new Set();
   for (const a of ev.achievements) {
@@ -192,14 +192,32 @@ test('rankUp', () => {
 });
 
 test('newlyUnlocked', () => {
-  const s = base({ history: [split(T0)] });
+  // a recent split, so the week-old-pending achievement doesn't fire
+  const s = base({ history: [split(Date.now() - DAY)] });
   const ids = newlyUnlocked(s).map((a) => a.id).sort();
   assert.deepEqual(ids, ['big_dreams', 'first_blood', 'no_penny', 'paid_1k', 'saved_100', 'tight_arse']);
   const recorded = Object.fromEntries(ids.map((id) => [id, 123]));
   assert.deepEqual(newlyUnlocked({ ...s, unlocked: recorded }), []);
   const s2 = { ...s, unlocked: recorded, history: weekly(4) };
-  assert.deepEqual(newlyUnlocked(s2).map((a) => a.id).sort(), ['goal_hit', 'saved_1k', 'streak_3']);
+  assert.deepEqual(newlyUnlocked(s2).map((a) => a.id).sort(), ['goal_hit', 'loose_ends', 'saved_1k', 'streak_3']);
   assert.deepEqual(newlyUnlocked(base({ unlocked: undefined })).map((a) => a.id), ['big_dreams']);
 });
 
 console.log(`\n${passed} tests passed`);
+
+test('banking bonus and transfer achievements', () => {
+  const pend = base({ history: [split(T0)] });
+  const banked = base({ history: [split(T0, { status: 'banked', bankedAt: T0 + 30 * 60 * 1000 })] });
+  const slow = base({ history: [split(T0, { status: 'banked', bankedAt: T0 + 3 * DAY })] });
+  assert.equal(computeXp(banked) - computeXp(pend), XP_RULES.banked + XP_RULES.fastBank);
+  assert.equal(computeXp(slow) - computeXp(pend), XP_RULES.banked);
+  const ev = evaluate(banked);
+  assert.ok(ach(ev, 'paper_trail').unlocked);
+  assert.ok(ach(ev, 'same_day').unlocked);
+  assert.ok(!ach(evaluate(slow), 'same_day').unlocked);
+  assert.ok(!ach(evaluate(pend), 'paper_trail').unlocked);
+  // legacy entries with no status count as banked for XP
+  const legacy = base({ history: [split(T0, { status: undefined })] });
+  assert.equal(computeXp(legacy) - computeXp(pend), XP_RULES.banked);
+  assert.ok(ach(evaluate(base({ buckets: [{ ...buckets[0], auto: true }] })), 'autopilot').unlocked);
+});

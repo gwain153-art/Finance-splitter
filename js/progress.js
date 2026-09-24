@@ -15,6 +15,8 @@ export const XP_RULES = {
   streakStep: 10,     // x current streak length, capped
   streakCap: 10,      // so max streak bonus per split is 100
   resplit: 10,        // a split within half a pay period of the previous one (a redo, not a new payday)
+  banked: 60,         // every slip on the split stamped in the Transfer Run
+  fastBank: 40,       // ...and done within 24 hours of the cut
 };
 
 export const LEVELS = [
@@ -90,6 +92,9 @@ function walk(state) {
   return { rows: out, streak: run, bestStreak: best };
 }
 
+// Entries from before the Transfer Run have no status and count as banked.
+function isBanked(e) { return !e.status || e.status === 'banked'; }
+
 function xpFromRows(rows) {
   let xp = 0;
   for (const r of rows) {
@@ -98,6 +103,10 @@ function xpFromRows(rows) {
     xp += Math.round(r.savedFrac * XP_RULES.savedMax);
     if (r.perfect) xp += XP_RULES.perfect;
     if (r.kind === 'ontime') xp += XP_RULES.streakStep * Math.min(r.run, XP_RULES.streakCap);
+    if (isBanked(r.e)) {
+      xp += XP_RULES.banked;
+      if (num(r.e.bankedAt) && num(r.e.bankedAt) - num(r.e.t) <= DAY) xp += XP_RULES.fastBank;
+    }
   }
   return xp;
 }
@@ -200,6 +209,18 @@ function defs(cur) {
       check: (c) => ratio(c.biggestPay, 5000) },
     { id: 'shapeshifter', name: 'Shapeshifter', icon: 'star', desc: 'Split on two different pay frequencies. Commitment issues.',
       check: (c) => ratio(c.freqs, 2) },
+    // Transfer Run
+    { id: 'autopilot', name: 'Autopilot', icon: 'bolt', desc: 'Set a bucket to move on its own. Robots do the boring bit.',
+      check: (c) => (c.autoBucket ? 1 : 0) },
+    { id: 'paper_trail', name: 'Paper Trail', icon: 'vault', desc: 'Stamp every slip on a split. The money actually moved.',
+      check: (c) => ratio(c.bankedCount, 1) },
+    { id: 'same_day', name: 'Same-Day Delivery', icon: 'bolt', desc: 'Bank a whole split within an hour of cutting it.',
+      check: (c) => (c.fastBank ? 1 : 0) },
+    { id: 'stamp_addict', name: 'Rubber Stamp Addict', icon: 'shield', desc: '10 fully banked splits. Thwack thwack thwack.',
+      check: (c) => ratio(c.bankedCount, 10) },
+    { id: 'loose_ends', name: 'Loose Ends', icon: 'skull', desc: 'Leave a split unbanked for a week. Tut.',
+      check: (c) => (c.stalePending ? 1 : 0), hidden: true },
+
     { id: 'yolo', name: 'Living Dangerously', icon: 'skull', desc: 'Split a paycheck and save absolutely nothing. Bold.',
       check: (c) => (c.zeroSaveSplit ? 1 : 0), hidden: true },
     { id: 'nice', name: 'Nice.', icon: 'skull', desc: 'Split a pay of exactly 69 or 420. Grow up.',
@@ -214,7 +235,8 @@ function context(state, w) {
   const rows = w.rows;
   const byBucket = new Map();
   let paid = 0, saved = 0, perfectCount = 0, bestSavedFrac = 0, biggestPay = 0;
-  let zeroSaveSplit = false, nicePay = false;
+  let zeroSaveSplit = false, nicePay = false, bankedCount = 0, fastBank = false, stalePending = false;
+  const now = Date.now();
   const freqs = new Set();
   for (const r of rows) {
     paid += r.pay;
@@ -225,6 +247,11 @@ function context(state, w) {
     if (r.pay > 0 && r.saved === 0 && (r.e.parts || []).length > 0) zeroSaveSplit = true;
     if (r.pay === 69 || r.pay === 420) nicePay = true;
     if (r.e.freq) freqs.add(r.e.freq);
+    if (r.e.status === 'banked') {
+      bankedCount++;
+      if (num(r.e.bankedAt) && num(r.e.bankedAt) - num(r.e.t) <= DAY / 24) fastBank = true;
+    }
+    if (r.e.status === 'pending' && now - num(r.e.t) > 7 * DAY) stalePending = true;
     for (const p of r.e.parts || []) {
       if (p.id == null) continue;
       byBucket.set(p.id, (byBucket.get(p.id) || 0) + num(p.amt));
@@ -247,6 +274,8 @@ function context(state, w) {
     hasSweep: buckets.some((b) => /leftover|sweep|spare|remainder|buffer|overflow/i.test(String(b.name || ''))),
     goalCount, goalsHit, bestGoalFrac,
     bestStreak: w.bestStreak,
+    bankedCount, fastBank, stalePending,
+    autoBucket: buckets.some((b) => b.auto),
   };
 }
 
