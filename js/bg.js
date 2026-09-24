@@ -50,10 +50,10 @@ const vec3 BLACK  = vec3(0.039, 0.027, 0.031);
 const vec3 INK    = vec3(0.067, 0.047, 0.055);
 const vec3 GREY1  = vec3(0.129, 0.102, 0.114);
 const vec3 GREY2  = vec3(0.184, 0.145, 0.161);
-const vec3 CRIM   = vec3(0.863, 0.078, 0.235);
-const vec3 CRIMHI = vec3(1.000, 0.227, 0.361);
-const vec3 DEEP   = vec3(0.420, 0.039, 0.118);
-const vec3 BLOOD  = vec3(0.560, 0.030, 0.085);  // lit-smoke crimson (less blue, avoids pink)
+uniform vec3 CRIM;    // accent colours come from the app's note theme
+uniform vec3 CRIMHI;
+uniform vec3 DEEP;
+uniform vec3 BLOOD;   // lit smoke
 
 float hash(vec2 p){
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -194,6 +194,7 @@ void main(){
 function noop() {}
 
 export function createBackground(canvas, { reduceMotion = false } = {}) {
+  const accent = { crim: [0.863, 0.078, 0.235], hi: [1, 0.227, 0.361], deep: [0.42, 0.039, 0.118], blood: [0.56, 0.03, 0.085] };
   const dead = {
     ok: false,
     setMood: noop, setCharge: noop, pulse: noop, setTilt: noop, destroy: noop,
@@ -262,7 +263,7 @@ export function createBackground(canvas, { reduceMotion = false } = {}) {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     U = {};
     for (const n of ['uRes', 'uTime', 'uClock', 'uTilt', 'uCharge', 'uEnergy', 'uHeat',
-      'uGlow', 'uAlarm', 'uLift', 'uRip']) {
+      'uGlow', 'uAlarm', 'uLift', 'uRip', 'CRIM', 'CRIMHI', 'DEEP', 'BLOOD']) {
       U[n] = gl.getUniformLocation(prog, n === 'uRip' ? 'uRip[0]' : n);
     }
     w = h = 0; // force viewport update
@@ -316,6 +317,8 @@ export function createBackground(canvas, { reduceMotion = false } = {}) {
       ripData[i * 4 + 2] = r.age; ripData[i * 4 + 3] = r.s;
     }
     gl.uniform4fv(U.uRip, ripData);
+    gl.uniform3fv(U.CRIM, accent.crim); gl.uniform3fv(U.CRIMHI, accent.hi);
+    gl.uniform3fv(U.DEEP, accent.deep); gl.uniform3fv(U.BLOOD, accent.blood);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
@@ -460,6 +463,12 @@ export function createBackground(canvas, { reduceMotion = false } = {}) {
       if (ripples.length >= MAX_RIPPLES) ripples.shift(); // drop the oldest
       ripples.push({ x: nx, y: ny, age: 0, s });
       start();
+    },
+    // Colours as [r,g,b] 0..1: { crim, hi, deep, blood }
+    setAccent(a) {
+      if (destroyed || !a) return;
+      for (const k of ['crim', 'hi', 'deep', 'blood']) if (Array.isArray(a[k])) accent[k] = a[k].slice(0, 3);
+      if (reduceMotion) renderStatic(); else start();
     },
     setTilt(x, y) {
       if (destroyed) return;

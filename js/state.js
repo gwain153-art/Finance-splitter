@@ -5,7 +5,10 @@ const V1_KEY = 'crimson-cut-v1';
 
 export const CUR = { '£': 'GBP', '$': 'USD', '€': 'EUR' };
 export const FREQ = { weekly: 52, fortnightly: 26, monthly: 12 };
-export const SHADES = ['#DC143C', '#FF3A5C', '#B8AEB2', '#9E0F2E', '#FF8095', '#6E6468', '#E8E0E2', '#5E0B1D'];
+// Bucket colours: the four Bank of England notes, then lighter tints of each.
+export const SHADES = ['#D0263F', '#8E4FD0', '#DB7326', '#1F9C95', '#FF7A8C', '#B98AF5', '#FFA257', '#5FD6CE'];
+const OLD_SHADES = ['#DC143C', '#FF3A5C', '#B8AEB2', '#9E0F2E', '#FF8095', '#6E6468', '#E8E0E2', '#5E0B1D'];
+const reshade = c => { const i = OLD_SHADES.indexOf(String(c).toUpperCase()); return i >= 0 ? SHADES[i] : c; };
 
 export const uid = () => Math.random().toString(36).slice(2, 9);
 export const round2 = n => Math.round(n * 100) / 100;
@@ -19,18 +22,18 @@ export function defaults() {
     cur: '£',
     nextPayday: null,
     touched: false,
-    settings: { sound: true, haptics: true, motion: false },
+    settings: { sound: true, haptics: true, motion: false, note: '50' },
     unlocked: {},
     progressFrom: 0,
     resets: 1,
     history: [],
     buckets: [
-      { id: uid(), name: 'Rent & bills', mode: 'fixed', value: 950, color: '#DC143C', goal: null, auto: true },
-      { id: uid(), name: 'Savings', mode: 'pct', value: 20, color: '#FF3A5C', goal: 5000 },
-      { id: uid(), name: 'Investing', mode: 'pct', value: 10, color: '#B8AEB2', goal: null },
-      { id: uid(), name: 'Groceries', mode: 'pct', value: 12, color: '#9E0F2E', goal: null },
-      { id: uid(), name: 'Fun money', mode: 'pct', value: 10, color: '#FF8095', goal: null },
-      { id: uid(), name: 'Emergency fund', mode: 'pct', value: 5, color: '#6E6468', goal: 1500 }
+      { id: uid(), name: 'Rent & bills', mode: 'fixed', value: 950, color: '#D0263F', goal: null, auto: true },
+      { id: uid(), name: 'Savings', mode: 'pct', value: 20, color: '#8E4FD0', goal: 5000 },
+      { id: uid(), name: 'Investing', mode: 'pct', value: 10, color: '#1F9C95', goal: null },
+      { id: uid(), name: 'Groceries', mode: 'pct', value: 12, color: '#DB7326', goal: null },
+      { id: uid(), name: 'Fun money', mode: 'pct', value: 10, color: '#FF7A8C', goal: null },
+      { id: uid(), name: 'Emergency fund', mode: 'pct', value: 5, color: '#5FD6CE', goal: 1500 }
     ]
   };
 }
@@ -48,7 +51,7 @@ function normalise(s) {
   if (!(+s.resets >= 1)) { out.unlocked = {}; out.progressFrom = Date.now(); out.resets = 1; justReset = true; }
   out.buckets = (Array.isArray(s.buckets) ? s.buckets : d.buckets).map(b => ({
     id: b.id || uid(), name: String(b.name ?? 'Bucket'), mode: b.mode === 'fixed' ? 'fixed' : 'pct',
-    value: Math.max(0, +b.value || 0), color: b.color || SHADES[0], goal: b.goal > 0 ? +b.goal : null, auto: !!b.auto
+    value: Math.max(0, +b.value || 0), color: reshade(b.color || SHADES[0]), goal: b.goal > 0 ? +b.goal : null, auto: !!b.auto
   }));
   // v1 history parts had no bucket id; match on name so goals still count.
   const byName = new Map(out.buckets.map(b => [b.name.trim().toLowerCase(), b.id]));
@@ -56,7 +59,7 @@ function normalise(s) {
   out.history = (Array.isArray(s.history) ? s.history : []).map(h => {
     const legacy = !h.status;
     const parts = (h.parts || []).map(p => ({
-      id: p.id || byName.get(String(p.name).trim().toLowerCase()) || null, name: p.name, amt: +p.amt || 0, color: p.color,
+      id: p.id || byName.get(String(p.name).trim().toLowerCase()) || null, name: p.name, amt: +p.amt || 0, color: reshade(p.color),
       auto: !!p.auto, done: legacy ? true : !!(p.done || p.auto)
     }));
     return {

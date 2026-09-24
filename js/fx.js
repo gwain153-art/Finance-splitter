@@ -7,8 +7,13 @@ const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
 const C = {
   black: '#0A0708', panel: '#171113', g1: '#211A1D', g2: '#2F2529', g3: '#46383E', g4: '#9C8E93',
   crimson: '#DC143C', hi: '#FF3A5C', deep: '#6B0A1E', text: '#F4ECEE',
+  soft: '#FF8095', n1: '#8A0D27', n2: '#5A0819', n3: '#1E0A10',
 };
-const CONFETTI_COLORS = ['#DC143C', '#FF3A5C', '#F4ECEE', '#9C8E93', '#DC143C', '#FF8095', '#46383E', '#FFFFFF', '#9E0F2E'];
+let CONFETTI_COLORS = [];
+function rebuildConfetti() { CONFETTI_COLORS = [C.crimson, C.hi, '#F4ECEE', '#9C8E93', C.crimson, C.soft, '#46383E', '#FFFFFF', C.deep]; }
+rebuildConfetti();
+// Accent follows the app's note theme: { crimson, hi, deep, soft, n1, n2, n3 }.
+export function setPalette(p) { Object.assign(C, p || {}); rebuildConfetti(); }
 
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -99,22 +104,22 @@ function renderNoteFront(w, h, dpr, note) {
 
   // base
   let gr = g.createLinearGradient(0, 0, w, h);
-  gr.addColorStop(0, '#8A0D27');
-  gr.addColorStop(0.32, '#5A0819');
-  gr.addColorStop(0.68, '#1E0A10');
+  gr.addColorStop(0, C.n1);
+  gr.addColorStop(0.32, C.n2);
+  gr.addColorStop(0.68, C.n3);
   gr.addColorStop(1, '#0A0708');
   g.fillStyle = gr;
   g.fillRect(0, 0, w, h);
   gr = g.createRadialGradient(w * 0.18, h * 0.25, 0, w * 0.18, h * 0.25, w * 0.7);
-  gr.addColorStop(0, 'rgba(255,58,92,0.30)');
-  gr.addColorStop(1, 'rgba(255,58,92,0)');
+  gr.addColorStop(0, rgba(C.hi, 0.30));
+  gr.addColorStop(1, rgba(C.hi, 0));
   g.fillStyle = gr;
   g.fillRect(0, 0, w, h);
 
   // guilloche waves (two families -> moire)
   g.lineWidth = 0.55;
   for (let j = 0; j < 26; j++) {
-    g.strokeStyle = `rgba(255,128,149,${0.07 + (j % 3 === 0 ? 0.05 : 0)})`;
+    g.strokeStyle = rgba(C.soft, 0.07 + (j % 3 === 0 ? 0.05 : 0));
     g.beginPath();
     for (let x = -4; x <= w + 4; x += 3) {
       const y = h * 0.5 + Math.sin(x * 0.03 + j * 0.24) * h * 0.22 + Math.sin(x * 0.011 - j * 0.5) * h * 0.14 + (j - 13) * h * 0.012;
@@ -140,8 +145,8 @@ function renderNoteFront(w, h, dpr, note) {
 
   // seal
   gr = g.createRadialGradient(sx, sy, 0, sx, sy, sr * 0.42);
-  gr.addColorStop(0, '#2A0911');
-  gr.addColorStop(1, '#12070A');
+  gr.addColorStop(0, C.n2);
+  gr.addColorStop(1, C.n3);
   g.fillStyle = gr;
   g.beginPath(); g.arc(sx, sy, sr * 0.42, 0, TAU); g.fill();
   g.strokeStyle = rgba(C.hi, 0.9); g.lineWidth = 1.2;
@@ -164,7 +169,7 @@ function renderNoteFront(w, h, dpr, note) {
   // holographic sheen strip
   const hx = w * 0.6, hw = Math.max(8, w * 0.045);
   gr = g.createLinearGradient(0, 0, 0, h);
-  const holo = ['#FF3A5C', '#F4ECEE', '#9C8E93', '#DC143C', '#FF8095', '#E8E0E2', '#FF3A5C'];
+  const holo = [C.hi, '#F4ECEE', '#9C8E93', C.crimson, C.soft, '#E8E0E2', C.hi];
   holo.forEach((col, i) => gr.addColorStop(i / (holo.length - 1), rgba(col, 0.42)));
   g.save();
   g.globalCompositeOperation = 'lighter';
@@ -185,7 +190,7 @@ function renderNoteFront(w, h, dpr, note) {
   rrect(g, 11.5, 11.5, w - 23, h - 23, rad - 6); g.stroke();
   const micro = 'CRIMSON CUT • ';
   g.font = `600 4.6px ${MONO}`;
-  g.fillStyle = 'rgba(255,128,149,0.75)';
+  g.fillStyle = rgba(C.soft, 0.75);
   g.textAlign = 'left'; g.textBaseline = 'middle';
   const mw = g.measureText(micro).width || 40;
   const rowH = (len) => micro.repeat(Math.ceil(len / mw) + 1);
@@ -231,14 +236,14 @@ function renderNoteFront(w, h, dpr, note) {
   gr = g.createLinearGradient(0, ay - fs * 0.8, 0, ay);
   gr.addColorStop(0, '#FFFFFF');
   gr.addColorStop(0.55, '#F4ECEE');
-  gr.addColorStop(1, '#FF8095');
+  gr.addColorStop(1, C.soft);
   g.fillStyle = gr;
   g.fillText(amt, pad, ay);
   g.font = `600 ${Math.round(clamp(h * 0.048, 6, 10))}px ${MONO}`;
   g.fillStyle = 'rgba(244,236,238,0.55)';
   setSpacing(g, 1);
   g.fillText('LEGAL TENDER FOR ALL BUCKETS', pad, ay + h * 0.13);
-  g.fillStyle = 'rgba(255,58,92,0.8)';
+  g.fillStyle = rgba(C.hi, 0.8);
   g.fillText('SERIES MMXXVI · PAY TO THE BEARER', pad, ay + h * 0.21);
   setSpacing(g, 0);
 
@@ -264,7 +269,7 @@ function renderNoteBack(w, h, dpr) {
   let gr = g.createLinearGradient(w, 0, 0, h);
   gr.addColorStop(0, '#2F2529');
   gr.addColorStop(0.5, '#171113');
-  gr.addColorStop(1, '#4A0716');
+  gr.addColorStop(1, C.n2);
   g.fillStyle = gr; g.fillRect(0, 0, w, h);
   drawRosette(g, w * 0.5, h * 0.5, Math.min(h * 0.46, w * 0.3), 18, 13, C.hi, 0.2, 0.6);
   g.fillStyle = rgba(C.hi, 0.9);
@@ -661,7 +666,7 @@ export function createFx(canvas, { reduceMotion = false } = {}) {
         if (coin) { p.size = rand(4.5, 7); p.vr = rand(-2, 2); p.vf = rand(10, 22); }
         else {
           p.color = CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0];
-          p.dark = p.color === '#F4ECEE' || p.color === '#FFFFFF' ? '#B8AEB2' : p.color === '#9C8E93' ? '#6E6468' : '#6B0A1E';
+          p.dark = p.color === '#F4ECEE' || p.color === '#FFFFFF' ? '#B8AEB2' : p.color === '#9C8E93' ? '#6E6468' : C.deep;
           p.w = rand(5, 12); p.h = rand(3, 7);
         }
       }
@@ -966,7 +971,7 @@ export function createFx(canvas, { reduceMotion = false } = {}) {
       s.finale = true;
       const cx = W / 2, cy = H * 0.45;
       shockwave(cx, cy, { color: C.hi, radius: Math.max(W, H) * 0.75 });
-      shocks.push({ x: cx, y: cy, color: '#FF8095', r: Math.max(W, H) * 0.42, t: 0, max: 0.55, thick: 0.5 });
+      shocks.push({ x: cx, y: cy, color: C.soft, r: Math.max(W, H) * 0.42, t: 0, max: 0.55, thick: 0.5 });
       confetti(cx, cy, { count: 170 });
       sparkBurst(cx, cy, { color: C.hi, count: 40, power: 1.6 });
       flash(0.4);
@@ -1051,8 +1056,8 @@ export function createFx(canvas, { reduceMotion = false } = {}) {
       g.globalCompositeOperation = 'source-over';
       g.globalAlpha = 1;
       const vg = g.createRadialGradient(W / 2, H * 0.42, 0, W / 2, H * 0.42, Math.max(W, H) * 0.8);
-      vg.addColorStop(0, `rgba(20,4,9,${s.dim * 0.75})`);
-      vg.addColorStop(1, `rgba(3,1,2,${Math.min(0.92, s.dim * 1.35)})`);
+      vg.addColorStop(0, `rgba(9,9,12,${s.dim * 0.75})`);
+      vg.addColorStop(1, `rgba(2,2,3,${Math.min(0.92, s.dim * 1.35)})`);
       g.fillStyle = vg;
       g.fillRect(0, 0, W, H);
     }
