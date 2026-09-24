@@ -9,8 +9,10 @@ const STYLE_ID = 'cc-bankrun-css';
 const THRESH = 0.45;        // share of slip width you drag before letting go stamps it
 const FLICK = 0.9;          // px/ms: a fast flick past half the threshold also counts
 const MAX_PILE = 8;         // slips gathered into the finale pile
-const INK = '#DC143C';
-const INK_HI = '#FF3A5C';
+// Accent follows the app's note theme (CSS vars set by js/theme.js).
+const cssVar = (n, d) => { try { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || d; } catch (e) { return d; } };
+const ink = () => cssVar('--crimson', '#D0263F');
+const inkHi = () => cssVar('--crimson-hi', '#FF4B62');
 const RESULTS = new Set(['later', 'complete', 'scrapped']);
 
 const noop = () => {};
@@ -82,7 +84,7 @@ const timeFmt = (() => { try { return new Intl.DateTimeFormat('en-GB', { hour: '
 const dayFmt = (() => { try { return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }); } catch (_) { return null; } })();
 const fmtTime = d => { try { return timeFmt ? timeFmt.format(d) : `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; } catch (_) { return ''; } };
 const fmtDay = t => { try { return dayFmt && t ? dayFmt.format(new Date(t)) : ''; } catch (_) { return ''; } };
-const safeColor = c => (typeof c === 'string' && /^#[0-9a-f]{3,8}$/i.test(c.trim()) ? c.trim() : INK);
+const safeColor = c => (typeof c === 'string' && /^#[0-9a-f]{3,8}$/i.test(c.trim()) ? c.trim() : ink());
 
 /* ---------- odometer (same feel as the app's) ---------- */
 const DIGITS = '<b>0</b><b>1</b><b>2</b><b>3</b><b>4</b><b>5</b><b>6</b><b>7</b><b>8</b><b>9</b>';
@@ -473,8 +475,8 @@ function createRun(o) {
     snd('thump'); hap('heavy');
     const k = parts.filter(x => x.done && !x.auto).length;
     later(() => snd('coin', { i: Math.max(0, k - 1) }), 110);
-    fx('sparkBurst', c.x, c.y, { color: INK, count: 32, power: .85 });
-    fx('shockwave', c.x, c.y, { color: INK_HI, radius: 120 });
+    fx('sparkBurst', c.x, c.y, { color: ink(), count: 32, power: .85 });
+    fx('shockwave', c.x, c.y, { color: inkHi(), radius: 120 });
     bg('pulse', c.x, c.y, .9);
     if (!reduce) {
       anim(p.body, [
@@ -633,7 +635,7 @@ function createRun(o) {
     lbl.textContent = ok ? 'Copied' : `Copy failed. It's ${text}`;
     if (ok) {
       const ic = btn.querySelector('.ic-tick') || btn, c = centreOf(ic);
-      fx('sparkBurst', c.x, c.y, { color: INK_HI, count: 10, power: .3 });
+      fx('sparkBurst', c.x, c.y, { color: inkHi(), count: 10, power: .3 });
       snd('pop'); hap('light');
       announce(`Copied ${text}`);
     } else { snd('error'); hap('error'); }
@@ -769,13 +771,13 @@ function createRun(o) {
       root.classList.remove('quake'); void root.offsetWidth; root.classList.add('quake');
     }
     if (instant) {
-      fx('sparkBurst', cx, cy, { color: INK, count: 28, power: .9 });
+      fx('sparkBurst', cx, cy, { color: ink(), count: 28, power: .9 });
       bg('pulse', cx, cy, 1);
     } else {
       fx('flash', .45);
-      fx('shockwave', cx, cy, { color: INK_HI, radius: Math.max(innerWidth, innerHeight) * .75 });
+      fx('shockwave', cx, cy, { color: inkHi(), radius: Math.max(innerWidth, innerHeight) * .75 });
       fx('confetti', cx, cy, { count: 220 });
-      fx('sparkBurst', cx, cy, { color: INK, count: 50, power: 1.5 });
+      fx('sparkBurst', cx, cy, { color: ink(), count: 50, power: 1.5 });
       bg('setMood', 'celebrate'); bg('pulse', cx, cy, 2);
       later(() => { snd('fanfare'); hap('success'); }, 90);
     }

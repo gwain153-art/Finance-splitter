@@ -149,7 +149,7 @@ function faceSvg(id) {
     <defs>${rivetDefs(id)}
       <path id="${id}arcT" d="M -26.2 0 A 26.2 26.2 0 0 1 26.2 0"/>
       <linearGradient id="${id}enamel" x1="0" y1="-1" x2="0" y2="1" gradientUnits="objectBoundingBox">
-        <stop offset="0" stop-color="#ff3a5c"/><stop offset=".5" stop-color="#dc143c"/><stop offset="1" stop-color="#7a0b22"/></linearGradient>
+        <stop offset="0" style="stop-color:var(--crimson-hi)"/><stop offset=".5" style="stop-color:var(--crimson)"/><stop offset="1" style="stop-color:var(--n1)"/></linearGradient>
     </defs>
     <!-- machined grooves around the text band -->
     <circle r="30.05" fill="none" stroke="rgba(0,0,0,.7)" stroke-width=".32"/>
@@ -205,8 +205,8 @@ function dialSvg(id) {
     <circle r="5.05" fill="url(#${id}knob)"/>
     <circle r="5.05" fill="none" stroke="rgba(255,240,244,.18)" stroke-width=".18"/>
     <g mask="url(#${id}cut)">
-      <circle r="2.55" fill="none" stroke="#dc143c" stroke-width=".62"/>
-      <circle r="1.25" fill="#ff3a5c"/>
+      <circle r="2.55" fill="none" style="stroke:var(--crimson)" stroke-width=".62"/>
+      <circle r="1.25" style="fill:var(--crimson-hi)"/>
     </g>
     <rect x="-3.4" y="-.07" width="6.8" height=".14" fill="#f4ecee" opacity=".7" transform="rotate(-45)"/>
   </svg>`;
@@ -217,7 +217,7 @@ function gaugeSvg(id) {
   for (let i = 0; i <= 30; i++) {
     const a = -135 + i * 9;
     const major = i % 5 === 0;
-    ticks += `<line x1="0" y1="-${major ? 11.6 : 12.4}" x2="0" y2="-13.4" transform="rotate(${a})" stroke="${i >= 24 ? '#ff3a5c' : '#b8aeb2'}" stroke-width="${major ? 0.5 : 0.25}"/>`;
+    ticks += `<line x1="0" y1="-${major ? 11.6 : 12.4}" x2="0" y2="-13.4" transform="rotate(${a})" style="stroke:${i >= 24 ? 'var(--crimson-hi)' : '#b8aeb2'}" stroke-width="${major ? 0.5 : 0.25}"/>`;
   }
   let nums = '';
   [0, 1, 2, 3, 4, 5, 6].forEach((n, i) => {
@@ -225,7 +225,7 @@ function gaugeSvg(id) {
     nums += `<text x="${(Math.sin(a) * 9.2).toFixed(2)}" y="${(-Math.cos(a) * 9.2 + 1).toFixed(2)}" text-anchor="middle">${n * 50}</text>`;
   });
   return `<svg viewBox="-16 -16 32 32" aria-hidden="true">
-    <path d="M ${(Math.sin(81 * Math.PI / 180) * 13.9).toFixed(2)} ${(-Math.cos(81 * Math.PI / 180) * 13.9).toFixed(2)} A 13.9 13.9 0 0 1 ${(Math.sin(135 * Math.PI / 180) * 13.9).toFixed(2)} ${(-Math.cos(135 * Math.PI / 180) * 13.9).toFixed(2)}" fill="none" stroke="#dc143c" stroke-width="1" opacity=".85"/>
+    <path d="M ${(Math.sin(81 * Math.PI / 180) * 13.9).toFixed(2)} ${(-Math.cos(81 * Math.PI / 180) * 13.9).toFixed(2)} A 13.9 13.9 0 0 1 ${(Math.sin(135 * Math.PI / 180) * 13.9).toFixed(2)} ${(-Math.cos(135 * Math.PI / 180) * 13.9).toFixed(2)}" fill="none" style="stroke:var(--crimson)" stroke-width="1" opacity=".85"/>
     ${ticks}
     <g class="vd-gauge-num">${nums}</g>
     <text class="vd-gauge-lbl" y="11.2" text-anchor="middle">VAULT PSI</text>

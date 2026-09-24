@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>try{var cc=JSON.parse(localStorage.getItem('crimson-cut-v2'));if(cc&&cc.settings&&cc.settings.note)document.documentElement.dataset.note=cc.settings.note}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#0A0708">
 <meta name="color-scheme" content="dark">
@@ -43,9 +44,9 @@
 <!-- boot splash -->
 <div id="boot" class="boot" aria-hidden="true">
   <svg class="boot-logo" viewBox="0 0 48 48">
-    <circle class="ring" cx="24" cy="24" r="19" fill="none" stroke="#DC143C" stroke-width="4"/>
-    <circle class="core" cx="24" cy="24" r="10" fill="#DC143C"/>
-    <path class="cut" d="M4 44 L44 4" stroke="#0A0708" stroke-width="5" stroke-linecap="round"/>
+    <circle class="ring" cx="24" cy="24" r="19" fill="none" style="stroke:var(--crimson)" stroke-width="4"/>
+    <circle class="core" cx="24" cy="24" r="10" style="fill:var(--crimson)"/>
+    <path class="cut" d="M4 44 L44 4" stroke="#09090C" stroke-width="5" stroke-linecap="round"/>
     <path class="edge" d="M4 44 L44 4" stroke="#F4ECEE" stroke-width="1.2" stroke-linecap="round"/>
   </svg>
   <div class="boot-word"><span>Crimson</span><span>Cut</span></div>
@@ -54,7 +55,7 @@
 <div class="app" id="app">
   <header class="hdr">
     <div class="hdr-brand" aria-label="Crimson Cut">
-      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke="#DC143C" stroke-width="4"/><circle cx="24" cy="24" r="10" fill="#DC143C"/><path d="M6 42 L42 6" stroke="#0A0708" stroke-width="5" stroke-linecap="round"/><path d="M6 42 L42 6" stroke="#F4ECEE" stroke-width="1.2" stroke-linecap="round" opacity=".7"/></svg>
+      <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" style="stroke:var(--crimson)" stroke-width="4"/><circle cx="24" cy="24" r="10" style="fill:var(--crimson)"/><path d="M6 42 L42 6" stroke="#09090C" stroke-width="5" stroke-linecap="round"/><path d="M6 42 L42 6" stroke="#F4ECEE" stroke-width="1.2" stroke-linecap="round" opacity=".7"/></svg>
       <span class="hdr-word">Crimson<b>Cut</b></span>
     </div>
     <button class="rank-pill" id="rankPill" aria-label="Your rank">
@@ -85,6 +86,7 @@
           <button class="note" id="note" aria-label="Edit paycheck amount">
             <span class="note-guilloche" aria-hidden="true"></span>
             <span class="note-holo" aria-hidden="true"></span>
+            <span class="note-denom" id="noteDenom" aria-hidden="true">50</span>
             <span class="note-top"><span class="note-label">This paycheck</span><span class="note-serial tab" id="noteSerial">CC-0001</span></span>
             <span class="note-amt"><span class="note-sym" id="noteSym">£</span><span class="odo" id="payOdo"></span></span>
             <span class="note-bottom"><span class="micro">Crimson Cut · Legal tender for your own bullshit</span><span class="note-edit">Tap to edit</span></span>
@@ -100,7 +102,7 @@
             <div class="donut-wrap">
               <svg id="donut" viewBox="0 0 200 200" aria-hidden="true">
                 <defs>
-                  <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#231B1E"/><rect width="2" height="5" fill="#46383E"/></pattern>
+                  <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#1E1B24"/><rect width="2" height="5" fill="#413B4A"/></pattern>
                 </defs>
                 <g class="ticks" id="ticks"></g>
                 <circle class="track" cx="100" cy="100" r="80"/>
@@ -196,7 +198,7 @@
       <span class="cut-text"><b id="cutLbl">Swipe to cut</b><small class="tab" id="cutSub"></small></span>
       <span class="cut-chev" aria-hidden="true"><i></i><i></i><i></i></span>
       <span class="cut-knob" id="cutKnob" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M3 21 L17 7 L21 3 L19 9 L6 22 Z" fill="#fff"/><path d="M3 21 L6 22" stroke="#DC143C" stroke-width="2"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M3 21 L17 7 L21 3 L19 9 L6 22 Z" fill="#fff"/><path d="M3 21 L6 22" style="stroke:var(--crimson)" stroke-width="2"/></svg>
       </span>
     </div>
   </div>
@@ -248,6 +250,14 @@
     <label class="set-row"><span><b>Sound</b><small>Works with the silent switch on</small></span><input type="checkbox" class="tgl" id="setSound"></label>
     <label class="set-row"><span><b>Haptics</b><small>Taps and thumps on iPhone</small></span><input type="checkbox" class="tgl" id="setHaptics"></label>
     <label class="set-row"><span><b>Tilt effects</b><small>Move your phone, the note catches the light</small></span><input type="checkbox" class="tgl" id="setMotion"></label>
+    <div class="set-row set-notes"><span><b>Note colour</b><small>Theme the whole app after a note</small></span>
+      <div class="note-pick" id="notePick" role="group" aria-label="Note colour">
+        <button data-note="50" aria-label="Fifty pound red"><i>£50</i></button>
+        <button data-note="20" aria-label="Twenty pound purple"><i>£20</i></button>
+        <button data-note="10" aria-label="Ten pound orange"><i>£10</i></button>
+        <button data-note="5" aria-label="Five pound teal"><i>£5</i></button>
+      </div>
+    </div>
     <label class="set-row"><span><b>Currency</b></span><select id="setCur"><option value="£">£ GBP</option><option value="$">$ USD</option><option value="€">€ EUR</option></select></label>
     <label class="set-row"><span><b>Next payday</b><small>Countdown up top. Rolls forward on its own</small></span><input type="date" id="setPayday"></label>
   </div>

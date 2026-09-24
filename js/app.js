@@ -15,6 +15,8 @@ const progress = await soft('./progress.js', m => m, null);
 const openBankRun = await soft('./bankrun.js', m => m.openBankRun, null);
 const createVaultDoor = await soft('./vaultdoor.js', m => m.createVaultDoor, null);
 const coach = await soft('./coach.js', m => m, null);
+const theme = await soft('./theme.js', m => m, null);
+const fxMod = await soft('./fx.js', m => m, null);
 const pwa = await soft('./pwa.js', m => m, { registerSW: noop, isStandalone: () => false, isIOS: () => false, requestPersistentStorage: async () => false });
 
 const $ = s => document.querySelector(s);
@@ -440,7 +442,7 @@ if (finePointer && !reduce) {
 function hitCard(id, i = 0) {
   const card = cardOf(id); if (!card) return;
   card.classList.remove('hit'); void card.offsetWidth; card.classList.add('hit');
-  const a = card.querySelector('.b-amt'); if (a) { const c = centre(a); fx.sparkBurst(c.x, c.y, { color: card.style.getPropertyValue('--c') || '#FF3A5C', count: 18, power: .7 }); }
+  const a = card.querySelector('.b-amt'); if (a) { const c = centre(a); fx.sparkBurst(c.x, c.y, { color: card.style.getPropertyValue('--c') || undefined, count: 18, power: .7 }); }
 }
 
 function deleteBucket(id) {
@@ -1143,6 +1145,29 @@ $('#resetBtn').addEventListener('click', e => {
 });
 
 /* =========================================================
+   NOTE THEME
+   ========================================================= */
+function applyTheme(key, { celebrate = false } = {}) {
+  if (!theme) return;
+  const t = theme.applyNote(key);
+  $('#noteDenom').textContent = String(key);
+  $$('#notePick button').forEach(b => b.setAttribute('aria-pressed', b.dataset.note === String(key)));
+  try { fxMod && fxMod.setPalette && fxMod.setPalette({ crimson: t.main, hi: t.hi, deep: t.deep, soft: t.soft, n1: t.n1, n2: t.n2, n3: t.n3 }); } catch (e) {}
+  try { bg.setAccent && bg.setAccent({ crim: theme.rgb01(t.main), hi: theme.rgb01(t.hi), deep: theme.rgb01(t.deep), blood: theme.rgb01(t.blood) }); } catch (e) {}
+  if (celebrate) {
+    const n = centre($('#notePick'));
+    fx.flash(.35); fx.sparkBurst(n.x, n.y, { color: t.hi, count: 40, power: 1 }); bg.pulse(innerWidth / 2, innerHeight / 2, 1.2);
+    Sound.play('sweep'); Haptics.success();
+  }
+}
+$('#notePick').addEventListener('click', e => {
+  const b = e.target.closest('[data-note]'); if (!b || b.dataset.note === state.settings.note) return;
+  state.settings.note = b.dataset.note; save();
+  applyTheme(b.dataset.note, { celebrate: true });
+  toast(`Running on ${theme ? theme.noteOf(b.dataset.note).label + 's' : 'that'} now`);
+});
+
+/* =========================================================
    TILT
    ========================================================= */
 const note = $('#note');
@@ -1177,6 +1202,7 @@ function disableMotion() { removeEventListener('deviceorientation', onOrient); s
    ========================================================= */
 function applySettings() {
   Sound.enabled = state.settings.sound; Haptics.enabled = state.settings.haptics;
+  applyTheme(state.settings.note || '50');
   if (state.settings.motion) {
     // iOS needs a tap to re-grant motion each launch; ask on the first touch.
     enableMotion(false).then(ok => { if (!ok) addEventListener('touchend', () => enableMotion(true), { once: true }); });
