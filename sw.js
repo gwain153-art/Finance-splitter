@@ -1,6 +1,6 @@
 /* Clean Cut service worker. All paths are relative to this file's scope,
    so it works at a domain root (Netlify) or under a sub-path (GitHub Pages). */
-const VERSION = 'cc-v7-2026-10-08';
+const VERSION = 'cc-v8-2026-10-08';
 const PREFIX = 'cc-';
 
 const SHELL = [
@@ -78,7 +78,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  if (req.mode === 'navigate') {
+  // Page and code always come from the same version: network first for HTML, JS, CSS and the
+  // manifest, cache only when offline. Fonts, icons and images stay cache-first-ish (they don't change).
+  if (req.mode === 'navigate' || /\.(?:html|js|mjs|css|webmanifest)$/.test(url.pathname)) {
     event.respondWith(networkFirst(event));
   } else {
     event.respondWith(staleWhileRevalidate(event));
@@ -89,13 +91,14 @@ async function networkFirst(event) {
   const req = event.request;
   const cache = await caches.open(VERSION);
   try {
-    const preload = event.preloadResponse ? await event.preloadResponse : null;
-    const res = preload || await fetch(req);
+    const preload = req.mode === 'navigate' && event.preloadResponse ? await event.preloadResponse : null;
+    const res = preload || await fetch(req, { cache: 'no-cache' });
     if (res && res.ok) cache.put(req, res.clone());
     return res;
   } catch (_) {
-    return (await cache.match(req, { ignoreSearch: true }))
-      || (await cache.match('index.html'))
+    const hit = await cache.match(req, { ignoreSearch: true });
+    if (hit || req.mode !== 'navigate') return hit || new Response('', { status: 503 });
+    return (await cache.match('index.html'))
       || (await cache.match('./'))
       || new Response('<h1>Offline</h1>', { status: 503, headers: { 'Content-Type': 'text/html' } });
   }
