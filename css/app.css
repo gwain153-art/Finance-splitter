@@ -812,3 +812,9 @@ html,body{max-width:100%;overflow-x:hidden}
 .set-num:focus{outline:0;border-color:var(--crimson);box-shadow:0 0 0 3px rgba(var(--a1),.25)}
 .b-status{transition:opacity .3s}
 @media (prefers-reduced-motion:reduce){.checks li.on .tick.pop,.bs-money.up,.bs-money.down,.bs-bal b.bump,.score-num.bump,.bills li.new,.bs-moves li.new{animation:none}}
+
+/* leftover bucket */
+.mode button[data-mode="rest"]{font-size:11px;letter-spacing:.04em;padding:0 8px;width:auto}
+.b-rest{display:none;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--c);padding:6px 10px;border:1px dashed var(--c);border-radius:10px;white-space:nowrap}
+.bucket.is-rest .b-val,.bucket.is-rest .b-range{display:none}
+.bucket.is-rest .b-rest{display:none}

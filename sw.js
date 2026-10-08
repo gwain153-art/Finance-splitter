@@ -1,6 +1,6 @@
 /* Clean Cut service worker. All paths are relative to this file's scope,
    so it works at a domain root (Netlify) or under a sub-path (GitHub Pages). */
-const VERSION = 'cc-v9-2026-10-08';
+const VERSION = 'cc-v10-2026-10-08';
 const PREFIX = 'cc-';
 
 const SHELL = [

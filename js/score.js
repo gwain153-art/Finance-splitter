@@ -63,7 +63,8 @@ export function factors(state, fmt = x => '£' + Math.round(x)) {
   const out = [];
   const pay = Math.max(0, n(state.pay));
   const buckets = state.buckets || [];
-  const amt = b => Math.max(0, b.mode === 'pct' ? pay * n(b.value) / 100 : n(b.value));
+  const base = b => Math.max(0, b.mode === 'pct' ? pay * n(b.value) / 100 : n(b.value));
+  const amt = b => b.mode === 'rest' ? Math.max(0, pay - buckets.reduce((t, x) => t + (x.mode === 'rest' ? 0 : base(x)), 0)) : base(b);
 
   const savedPlan = buckets.filter(b => isSavings(b.name)).reduce((s, b) => s + amt(b), 0);
   const rate = pay > 0 ? savedPlan / pay : 0;

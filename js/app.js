@@ -334,7 +334,7 @@ const DOTS = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12
 
 function cardEl(b, pay) {
   const el = document.createElement('article');
-  el.className = 'bucket'; el.dataset.id = b.id; el.style.setProperty('--c', b.color);
+  el.className = 'bucket' + (b.mode === 'rest' ? ' is-rest' : ''); el.dataset.id = b.id; el.style.setProperty('--c', b.color);
   const pct = b.mode === 'pct';
   el.innerHTML = `
     <div class="liquid" aria-hidden="true"><svg viewBox="0 0 200 12" preserveAspectRatio="none"><path d="${WAVE}"/></svg><svg viewBox="0 0 200 12" preserveAspectRatio="none"><path d="${WAVE}"/></svg></div>
@@ -348,9 +348,11 @@ function cardEl(b, pay) {
       <span class="odo b-amt"></span>
       <div class="b-ctl">
         <div class="mode" role="group" aria-label="Split by">
-          <button data-mode="pct" aria-pressed="${pct}" aria-label="Percent of pay">%</button>
-          <button data-mode="fixed" aria-pressed="${!pct}" aria-label="Fixed amount">${esc(state.cur)}</button>
+          <button data-mode="pct" aria-pressed="${b.mode === 'pct'}" aria-label="Percent of pay">%</button>
+          <button data-mode="fixed" aria-pressed="${b.mode === 'fixed'}" aria-label="Fixed amount">${esc(state.cur)}</button>
+          <button data-mode="rest" aria-pressed="${b.mode === 'rest'}" aria-label="Whatever's left">Rest</button>
         </div>
+        <span class="b-rest">Whatever's left</span>
         <label class="b-val"><span>${pct ? '' : esc(state.cur)}</span><input class="b-num" id="num-${b.id}" type="number" inputmode="decimal" min="0" step="${pct ? .5 : 1}" value="${showVal(b.value)}" aria-label="${pct ? 'Percent' : 'Amount'}"><span>${pct ? '%' : ''}</span></label>
       </div>
     </div>
@@ -523,9 +525,16 @@ list.addEventListener('click', e => {
   } else if (e.target.closest('.mode button')) {
     const mode = e.target.closest('button').dataset.mode;
     if (mode === b.mode) return;
-    const amt = b.mode === 'pct' ? pay * b.value / 100 : b.value;
-    b.mode = mode;
-    b.value = mode === 'fixed' ? Math.round(amt) : (pay ? Math.round(amt / pay * 10000) / 100 : 0);
+    const amt = amountOf(b, pay);
+    if (mode === 'rest') {
+      // Only one leftover bucket: any other one freezes at what it gets now.
+      state.buckets.forEach(x => { if (x !== b && x.mode === 'rest') { x.value = Math.round(amountOf(x, pay)); x.mode = 'fixed'; } });
+      b.mode = 'rest';
+      toast(`${b.name || 'This bucket'} now gets whatever's left`);
+    } else {
+      b.mode = mode;
+      b.value = mode === 'fixed' ? Math.round(amt) : (pay ? Math.round(amt / pay * 10000) / 100 : 0);
+    }
     Sound.play('toggle', { on: mode === 'fixed' }); Haptics.light(); touch(); renderBuckets();
   } else if (e.target.closest('.more')) {
     openBucketSheet(b.id);
@@ -583,7 +592,7 @@ const MY_PLAN = [
   { name: 'Bike: insurance + fuel', value: 150, icon: 'bike' },
   { name: 'Driving', value: 40, icon: 'car' },
   { name: 'Irregular: tools, servicing, clothes', value: 50, icon: 'tool' },
-  { name: 'Fun money', value: 200, icon: 'star', kind: 'spend' }
+  { name: 'Fun money', value: 200, icon: 'star', kind: 'spend', mode: 'rest' }
 ];
 const PRESETS = {
   503020: [['Needs', 50], ['Wants', 30], ['Savings', 20]],
@@ -598,9 +607,9 @@ $('#presets').addEventListener('click', e => {
     const byName = new Map(state.buckets.map(b => [b.name.trim().toLowerCase(), b]));
     state.buckets = MY_PLAN.map((x, i) => {
       const old = byName.get(x.name.toLowerCase());
-      return { id: old ? old.id : uid(), name: x.name, mode: 'fixed', value: x.value, color: SHADES[i % SHADES.length], goal: x.goal || null, goalDate: x.goalDate || null, auto: !!(old && old.auto), kind: x.kind || '', icon: x.icon };
+      return { id: old ? old.id : uid(), name: x.name, mode: x.mode || 'fixed', value: x.value, color: SHADES[i % SHADES.length], goal: x.goal || null, goalDate: x.goalDate || null, auto: !!(old && old.auto), kind: x.kind || '', icon: x.icon };
     });
-    if (!state.touched) { state.pay = 1350; state.freq = 'monthly'; renderNote(); renderFreq(); }
+    if (state.payCalc.useHours) { refreshPay(); renderNote(); }
   } else state.buckets = PRESETS[p.dataset.preset].map(([name, value], i) => ({ id: uid(), name, mode: 'pct', value, color: SHADES[i], goal: null }));
   touch(); renderBuckets(); Sound.play('whoosh'); Haptics.medium();
   const c = centre(list); bg.pulse(c.x, c.y, .7);

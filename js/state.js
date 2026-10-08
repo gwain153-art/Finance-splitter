@@ -69,7 +69,7 @@ function normalise(s) {
   // One-off: v3 restarts everyone's rank and achievements (history is kept).
   if (!(+s.resets >= 1)) { out.unlocked = {}; out.progressFrom = Date.now(); out.resets = 1; justReset = true; }
   out.buckets = (Array.isArray(s.buckets) ? s.buckets : d.buckets).map(b => ({
-    id: b.id || uid(), name: String(b.name ?? 'Bucket'), mode: b.mode === 'fixed' ? 'fixed' : 'pct',
+    id: b.id || uid(), name: String(b.name ?? 'Bucket'), mode: ['fixed', 'rest'].includes(b.mode) ? b.mode : 'pct',
     value: Math.max(0, +b.value || 0), color: reshade(b.color || SHADES[0]), goal: b.goal > 0 ? +b.goal : null, auto: !!b.auto,
     goalDate: /^\d{4}-\d{2}-\d{2}$/.test(b.goalDate || '') ? b.goalDate : null,
     kind: ['lisa', 'spend'].includes(b.kind) ? b.kind : '', icon: typeof b.icon === 'string' ? b.icon : ''
@@ -93,6 +93,15 @@ function normalise(s) {
     id: x.id || uid(), name: String(x.name).slice(0, 40), amt: Math.max(0, round2(+x.amt || 0)), day: clamp(Math.round(+x.day || 1), 1, 31), bucket: x.bucket || null
   }));
   out.lastBackup = +s.lastBackup || 0; out.backupNag = +s.backupNag || 0;
+  // Only one bucket can take "whatever's left".
+  let seenRest = false;
+  out.buckets.forEach(b => { if (b.mode === 'rest') { if (seenRest) b.mode = 'fixed'; seenRest = true; } });
+  // One-off: on George's plan, Fun money becomes the leftover bucket so the plan always fits the pay.
+  if (!(+s.restV >= 1)) {
+    out.restV = 1;
+    const fun = out.buckets.find(b => /^fun money$/i.test(b.name.trim()));
+    if (fun && !seenRest && out.buckets.some(b => /second lisa year/i.test(b.name))) fun.mode = 'rest';
+  }
   // v1 history parts had no bucket id; match on name so goals still count.
   const byName = new Map(out.buckets.map(b => [b.name.trim().toLowerCase(), b.id]));
   // Splits made before the Transfer Run existed count as already banked.
@@ -170,6 +179,11 @@ export function resetProgress() { state.unlocked = {}; state.progressFrom = Date
 
 /* ---------- money ---------- */
 export function amountOf(b, pay) {
+  if (b.mode === 'rest') {
+    const others = state.buckets.reduce((t, x) => t + (x === b || x.mode === 'rest' ? 0 : amountOf(x, pay)), 0);
+    const r = Math.max(0, pay - others);
+    return state.settings && state.settings.whole ? Math.floor(r + 1e-9) : round2(r);
+  }
   const a = Math.max(0, b.mode === 'pct' ? pay * b.value / 100 : b.value);
   // Whole pounds: easier to type into a bank app. The pennies stay in "left to assign".
   return state && state.settings && state.settings.whole ? Math.floor(a + 1e-9) : round2(a);
