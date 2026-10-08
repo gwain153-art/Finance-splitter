@@ -763,3 +763,52 @@ body,.note,.btn-primary,.chip,.cut-track,.tabbar,.pending-strip{transition-prope
 .rank-pill[data-band="3"] .rr-fill,.rank-pill[data-band="4"] .rr-fill{stroke:var(--alt-hi);filter:drop-shadow(0 0 4px var(--alt))}
 /* calm */
 body.calm .bg-fallback{opacity:.85}
+
+/* ---------- v9: polish ---------- */
+/* never scroll sideways */
+html,body{max-width:100%;overflow-x:hidden}
+.views{overflow-x:clip}
+.bill-add>*{min-width:0}
+.bill-add .field input{width:100%;min-width:0}
+/* note: long amounts shrink instead of running into the artwork */
+.note[data-len="8"] .note-amt{font-size:clamp(50px,14.5vw,76px)}
+.note[data-len="9"] .note-amt,.note[data-len="10"] .note-amt{font-size:clamp(44px,12.5vw,66px)}
+.note .micro{position:relative;z-index:1}
+/* content fades out under the swipe bar and tabs instead of showing through */
+.cutbar::before{content:"";position:absolute;left:0;right:0;top:-34px;bottom:calc(-1 * (var(--tabbar-h) + var(--sab) + 8px));z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(9,9,12,0),rgba(9,9,12,.88) 45%,#09090C 80%)}
+/* settings sections */
+.set-sec{padding:14px 16px 6px;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--crimson-hi);background:rgba(0,0,0,.28);border-bottom:1px solid var(--line)}
+.set-sec:not(:first-child){border-top:1px solid var(--line-2)}
+/* bucket sheet header icon */
+.bs-sw{display:grid;place-items:center;color:#fff;width:34px;height:34px;border-radius:11px}
+.bs-sw svg{width:18px;height:18px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+/* satisfying bits */
+@keyframes popIn{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes bump{0%{transform:scale(1)}35%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes rowIn{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes glowFlash{0%{box-shadow:0 0 0 0 rgba(var(--b1),.0)}30%{box-shadow:0 0 0 6px rgba(var(--b1),.25),0 0 40px -6px var(--alt)}100%{box-shadow:0 0 0 0 rgba(var(--b1),0)}}
+@keyframes glowFlashR{0%{box-shadow:0 0 0 0 rgba(var(--a1),0)}30%{box-shadow:0 0 0 6px rgba(var(--a1),.25),0 0 40px -6px var(--crimson)}100%{box-shadow:0 0 0 0 rgba(var(--a1),0)}}
+.checks li.on .tick.pop{animation:popIn .45s var(--spring)}
+.bs-money.up{animation:glowFlash .7s ease-out}
+.bs-money.down{animation:glowFlashR .7s ease-out}
+.bs-bal b.bump,.score-num.bump{animation:bump .5s var(--spring)}
+.bills li.new,.bs-moves li.new{animation:rowIn .45s var(--spring)}
+.factors .bar i,.proj-stats b{transition:width 1s var(--ease-out)}
+.proj-stats div,.clock,.phase{transition:transform .2s var(--spring)}
+.proj-stats div:active,.clock:active,.phase:active{transform:scale(.96)}
+.bills li,.bs-moves li{transition:background .2s}
+.bills li:active{background:rgba(255,255,255,.03)}
+.bs-move-btns button{transition:transform .18s var(--spring),background .2s,border-color .2s}
+.bs-move-btns button:active{transform:scale(.94)}
+#bsTake:active{background:rgba(var(--a1),.25)}
+#bsPut:active{background:rgba(var(--b1),.25)}
+.bs-icons button{transition:transform .2s var(--spring),background .2s,box-shadow .2s}
+.bs-icons button:active{transform:scale(.88)}
+.bs-icons button[aria-pressed="true"] svg{animation:popIn .4s var(--spring)}
+.kp-mode .chip[aria-pressed="true"],.bs-kind .chip[aria-pressed="true"]{background:var(--crimson);border-color:var(--crimson);color:#fff;box-shadow:0 0 22px -6px var(--crimson)}
+.toast{transition:transform .45s var(--spring),opacity .3s ease}
+.toast.show{transform:translate(-50%,0)}
+.tgl:checked{box-shadow:0 0 18px -4px var(--crimson)}
+.set-num:focus{outline:0;border-color:var(--crimson);box-shadow:0 0 0 3px rgba(var(--a1),.25)}
+.b-status{transition:opacity .3s}
+@media (prefers-reduced-motion:reduce){.checks li.on .tick.pop,.bs-money.up,.bs-money.down,.bs-bal b.bump,.score-num.bump,.bills li.new,.bs-moves li.new{animation:none}}

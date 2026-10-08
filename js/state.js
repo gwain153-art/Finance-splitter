@@ -1,5 +1,7 @@
 // Core state: persistence, migration, money maths, formatting, payday dates.
 
+import { takeHome, usualHours } from './money.js';
+
 export const KEY = 'crimson-cut-v2';
 const V1_KEY = 'crimson-cut-v1';
 
@@ -21,13 +23,14 @@ export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export function defaults() {
   return {
     v: 2,
-    pay: 2400,
+    pay: 1354.1,
     freq: 'monthly',
     cur: '£',
-    nextPayday: null,
+    nextPayday: nextOnDay(26),
     touched: false,
     settings: { sound: true, haptics: true, motion: false, note: '50', whole: false, calm: false },
-    payCalc: { useHours: false, rate: 8, otMult: 1.5, hours: 184.2, otHours: 0 },
+    payCalc: { useHours: true, rate: 8, otMult: 1.5, weekly: 42.5, hours: 184.17, otHours: 0, payDay: 26 },
+    payV: 1,
     moves: [],
     bills: [],
     lastBackup: 0,
@@ -72,7 +75,18 @@ function normalise(s) {
     kind: ['lisa', 'spend'].includes(b.kind) ? b.kind : '', icon: typeof b.icon === 'string' ? b.icon : ''
   }));
   const pc = s.payCalc && typeof s.payCalc === 'object' ? s.payCalc : {};
-  out.payCalc = { useHours: !!pc.useHours, rate: +pc.rate > 0 ? +pc.rate : 8, otMult: +pc.otMult > 0 ? +pc.otMult : 1.5, hours: +pc.hours >= 0 ? +pc.hours : 184.2, otHours: +pc.otHours >= 0 ? +pc.otHours : 0 };
+  out.payCalc = { useHours: !!pc.useHours, rate: +pc.rate > 0 ? +pc.rate : 8, otMult: +pc.otMult > 0 ? +pc.otMult : 1.5, weekly: +pc.weekly > 0 ? +pc.weekly : 42.5,
+    hours: +pc.hours >= 0 ? +pc.hours : 184.17, otHours: +pc.otHours >= 0 ? +pc.otHours : 0, payDay: +pc.payDay >= 1 && +pc.payDay <= 31 ? +pc.payDay : 26 };
+  // One-off: George's real pay built in. 42.5 hrs a week at £8, paid monthly on the 26th.
+  if (!(+s.payV >= 1)) {
+    out.payV = 1;
+    Object.assign(out.payCalc, { useHours: true, rate: 8, weekly: 42.5, otHours: 0, payDay: 26 });
+    out.freq = 'monthly';
+    out.payCalc.hours = usualHours('monthly', 42.5);
+    out.nextPayday = nextOnDay(26);
+    out.touched = true;
+  }
+  if (out.payCalc.useHours) out.pay = payFromHours(out);
   out.moves = (Array.isArray(s.moves) ? s.moves : []).filter(m => m && m.b && Number.isFinite(+m.amt) && +m.amt !== 0)
     .map(m => ({ id: m.id || uid(), t: +m.t || Date.now(), b: String(m.b), amt: round2(+m.amt), note: String(m.note || '').slice(0, 60), cur: m.cur || out.cur || '£' })).slice(-2000);
   out.bills = (Array.isArray(s.bills) ? s.bills : []).filter(x => x && x.name).map(x => ({
@@ -102,6 +116,27 @@ function normalise(s) {
 }
 
 export let justReset = false;
+
+// Next date on this day of the month (today counts), as YYYY-MM-DD.
+export function nextOnDay(day, now = new Date()) {
+  const t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const at = (y, m) => new Date(y, m, Math.min(day, new Date(y, m + 1, 0).getDate()));
+  let d = at(t.getFullYear(), t.getMonth());
+  if (d < t) d = at(t.getFullYear(), t.getMonth() + 1);
+  return toISO(d);
+}
+// Take-home for this pay period from hours worked (pension taken off if opted in).
+export function payFromHours(s = state) {
+  const pc = s.payCalc, gross = pc.hours * pc.rate + pc.otHours * pc.rate * pc.otMult;
+  return takeHome(gross, s.freq, { pension: !!(s.plan && s.plan.penOn) }).net;
+}
+// After a cut: next period goes back to the usual contracted hours, no overtime.
+export function resetPeriodHours() {
+  state.payCalc.hours = usualHours(state.freq, state.payCalc.weekly); state.payCalc.otHours = 0;
+  if (state.payCalc.useHours) state.pay = payFromHours();
+  save();
+}
+export function refreshPay() { if (state.payCalc.useHours) { state.pay = payFromHours(); save(); } }
 
 export function load() {
   try {

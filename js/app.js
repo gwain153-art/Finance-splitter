@@ -2,7 +2,8 @@ import {
   state, save, compute, fmt, fmt0, fmtShort, mkFormat, parseNum, esc, uid, round2, clamp,
   SHADES, FREQ, bucketTotal, nextPayday, exportJSON, replaceState, resetState,
   pending, pendingLeft, setPartDone, nextSerialN, resetProgress, justReset,
-  amountOf, cutTotal, addMove, removeMove, movesFor, lisaBonus, toISO
+  amountOf, cutTotal, addMove, removeMove, movesFor, lisaBonus, toISO,
+  nextOnDay, payFromHours, resetPeriodHours, refreshPay
 } from './state.js';
 import * as Money from './money.js';
 
@@ -133,7 +134,11 @@ function cashLine(amt) {
 function renderNote() {
   $('#noteSym').textContent = state.cur;
   payOdo.set(fmtPayDigits(state.pay));
-  $('#noteCash').textContent = state.pay > 0 ? '= ' + cashLine(state.pay) : 'Tap to put your pay in';
+  $('#note').dataset.len = String(Math.min(10, fmtPayDigits(state.pay).length));
+  const pc = state.payCalc;
+  $('#noteCash').textContent = pc.useHours
+    ? `${+pc.hours.toFixed(2)} hrs × ${fmt(pc.rate)}${pc.otHours ? ` + ${pc.otHours} OT` : ''} · paid the ${ordinal(pc.payDay)}`
+    : state.pay > 0 ? '= ' + cashLine(state.pay) : 'Tap to put your pay in';
   $('#noteSerial').textContent = serial(nextSerialN());
   $('#exampleTag').hidden = !!state.touched;
 }
@@ -158,7 +163,7 @@ function kpSetMode(m) {
 }
 function kpQuickChips() {
   if (kpMode === 'hours') {
-    const u = Money.usualHours(state.freq);
+    const u = Money.usualHours(state.freq, state.payCalc.weekly);
     $('#kpQuick').innerHTML = `<button class="chip sm" data-pay="${u}">Usual: ${u} hrs</button>` + (kp ? '<button class="chip sm" data-pay="clear">Clear</button>' : '');
     return;
   }
@@ -246,7 +251,9 @@ addEventListener('keydown', e => {
 function renderFreq() { $$('#freq .chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.freq === state.freq)); }
 $('#freq').addEventListener('click', e => {
   const b = e.target.closest('[data-freq]'); if (!b || b.dataset.freq === state.freq) return;
-  state.freq = b.dataset.freq; Sound.play('toggle', { on: true }); Haptics.light(); touch(); renderFreq(); update(); renderHeader();
+  state.freq = b.dataset.freq;
+  if (state.payCalc.useHours) { state.payCalc.hours = Money.usualHours(state.freq, state.payCalc.weekly); state.payCalc.otHours = 0; refreshPay(); renderNote(); }
+  Sound.play('toggle', { on: true }); Haptics.light(); touch(); renderFreq(); update(); renderHeader();
 });
 
 /* =========================================================
@@ -624,6 +631,7 @@ function openBucketSheet(id) {
   const b = state.buckets.find(x => x.id === id); if (!b) return;
   bsId = id;
   const sheet = $('#bucketSheet'); sheet.style.setProperty('--c', b.color);
+  $('#bsSw').innerHTML = icon(bucketIcon(b));
   $('#bsName').value = b.name; $('#bsCur').textContent = state.cur;
   $('#bsGoal').value = b.goal ? String(b.goal) : '';
   $('#bsGoalDate').value = b.goalDate || '';
@@ -653,11 +661,16 @@ function renderBsIcons(b) {
   $('#bsIcons').innerHTML = Object.keys(BICONS).map(k => `<button data-icon="${k}" aria-label="${k}" aria-pressed="${k === cur}">${icon(k)}</button>`).join('');
 }
 const moveDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
+const bsBalOdo = odo($('#bsBal'), { fast: true });
 function renderBsMoney(b) {
   const bal = bucketTotal(b.id), bo = b.kind === 'lisa' ? lisaBonus(b.id) : 0;
-  $('#bsBal').textContent = fmt(bal + bo);
+  const spend = b.kind === 'spend' ? spendLeft(b, amountOf(b, compute().pay)) : null;
+  $('#bsMoney .eyebrow').textContent = spend ? 'Left until payday' : b.kind === 'lisa' ? 'In the LISA with bonus' : 'In this bucket now';
+  bsBalOdo.set(fmt(spend ? spend.left : bal + bo));
   const cutIn = cutTotal(b.id), moved = round2(bal - cutIn);
-  $('#bsBalSub').textContent = [`${fmt(cutIn)} cut in`, moved ? `${moved > 0 ? '+' : '−'}${fmt(Math.abs(moved))} moved` : '', bo ? `+${fmt(bo)} bonus` : ''].filter(Boolean).join(' · ');
+  $('#bsBalSub').textContent = spend
+    ? `${fmt(spend.perDay)} a day for ${spend.days} day${spend.days === 1 ? '' : 's'} · ${fmt(bal)} in total`
+    : [`${fmt(cutIn)} cut in`, moved ? `${moved > 0 ? '+' : '−'}${fmt(Math.abs(moved))} moved` : '', bo ? `+${fmt(bo)} bonus` : ''].filter(Boolean).join(' · ');
   const ms = movesFor(b.id).slice(0, 8);
   $('#bsMoves').innerHTML = ms.map(m => `<li><span class="when">${esc(moveDate.format(m.t))}</span><span class="what">${esc(m.note || (m.amt < 0 ? 'Taken out' : 'Put in'))}</span><b class="${m.amt < 0 ? 'neg' : 'plus'}">${m.amt < 0 ? '−' : '+'}${esc(fmt(Math.abs(m.amt)))}</b><button class="x" data-move="${m.id}" aria-label="Undo this">×</button></li>`).join('');
 }
@@ -669,6 +682,11 @@ function bsMove(sign) {
   $('#bsMoveAmt').value = ''; $('#bsMoveNote').value = '';
   Sound.play(sign < 0 ? 'coin' : 'sweep'); Haptics.success();
   renderBsMoney(b); renderBsProgress(b); touch(); update();
+  const box = $('#bsMoney'), bal = $('#bsBal');
+  box.classList.remove('up', 'down', 'bump'); bal.classList.remove('bump'); void box.offsetWidth;
+  box.classList.add(sign < 0 ? 'down' : 'up'); bal.classList.add('bump');
+  const first = $('#bsMoves li'); if (first) first.classList.add('new');
+  const bc = centre($(sign < 0 ? '#bsTake' : '#bsPut')); fx.sparkBurst(bc.x, bc.y, { color: sign < 0 ? '#D0263F' : '#B98AF5', count: 22, power: .7 });
   toast(sign < 0 ? `${fmt(v)} out of ${b.name}` : `${fmt(v)} into ${b.name}`);
   queueProgress();
 }
@@ -685,7 +703,7 @@ $('#bsKind').addEventListener('click', e => {
 });
 $('#bsIcons').addEventListener('click', e => {
   const k = e.target.closest('[data-icon]'); const b = bsB(); if (!k || !b) return;
-  b.icon = k.dataset.icon; touch(); Sound.play('tap'); Haptics.light(); renderBsIcons(b);
+  b.icon = k.dataset.icon; touch(); Sound.play('tap'); Haptics.light(); renderBsIcons(b); $('#bsSw').innerHTML = icon(b.icon);
 });
 $('#bsGoalDate').addEventListener('change', e => { const b = bsB(); if (b) { b.goalDate = e.target.value || null; touch(); renderBsProgress(b); } });
 const bsB = () => state.buckets.find(x => x.id === bsId);
@@ -905,6 +923,7 @@ async function runSplit() {
   finishSplit();
   function finishSplit() {
     splitting = false;
+    if (state.payCalc.useHours) resetPeriodHours();
     renderNote(); update(); renderHeader(); renderPending();
     live.forEach((r, i) => setTimeout(() => hitCard(r.b.id, i), reduce ? 0 : 80 * i));
     processProgress();
@@ -1196,13 +1215,15 @@ function renderBills() {
   }).join('') : '<li class="empty">Add the things that go out every month: insurance, phone, subscriptions.</li>';
   $('#billBucket').innerHTML = '<option value="">From which bucket?</option>' + state.buckets.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
 }
-const ordinal = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
+function ordinal(n) { return n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th'); }
 $('#billForm').addEventListener('submit', e => {
   e.preventDefault();
   const name = $('#billName').value.trim(), amt = round2(parseNum($('#billAmt').value)), day = Math.round(parseNum($('#billDay').value));
   if (!name || !(amt > 0) || !(day >= 1 && day <= 31)) { Sound.play('error'); Haptics.error(); toast('Name, amount and a day from 1 to 31'); return; }
   state.bills.push({ id: uid(), name, amt, day, bucket: $('#billBucket').value || null });
+  const newId = state.bills[state.bills.length - 1].id;
   e.target.reset(); save(); renderBills(); Sound.play('pop'); Haptics.medium(); toast(`${name} added`);
+  const li = $(`#billsList [data-bill="${newId}"]`)?.closest('li'); if (li) li.classList.add('new');
 });
 $('#billsList').addEventListener('click', e => {
   const x = e.target.closest('[data-bill]'); if (!x) return;
@@ -1246,6 +1267,22 @@ function gaugeSVG(score) {
 }
 const tickSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
 const longDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+let shownScore = null, countRaf = 0;
+function countTo(el, to) {
+  const from = shownScore == null ? Math.max(0, to - 120) : shownScore;
+  shownScore = to; cancelAnimationFrame(countRaf);
+  if (reduce || from === to) { el.textContent = to; return; }
+  const t0 = performance.now(), dur = 900;
+  let lastTick = from;
+  const step = now => {
+    const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3), v = Math.round(from + (to - from) * e);
+    el.textContent = v;
+    if (Math.abs(v - lastTick) >= 12) { lastTick = v; Haptics.tick(); }
+    if (p < 1) countRaf = requestAnimationFrame(step);
+    else { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+  };
+  countRaf = requestAnimationFrame(step);
+}
 function renderRanks() {
   if (!Score) return;
   const sc = scoreNow();
@@ -1257,7 +1294,7 @@ function renderRanks() {
     if (f) f.style.strokeDashoffset = f.dataset.off;
     if (nd) nd.style.transform = `rotate(${nd.dataset.rot}deg)`;
   }));
-  $('#scoreNum').textContent = sc.score;
+  countTo($('#scoreNum'), sc.score);
   const bandEl = $('#scoreBand'); bandEl.textContent = sc.band.name; bandEl.className = 'score-band b' + sc.band.index;
   $('#scoreBlurb').textContent = sc.band.next ? `${sc.band.blurb} ${sc.band.next.min - sc.score} to ${sc.band.next.name}.` : sc.band.blurb;
   const log = Array.isArray(state.scoreLog) ? state.scoreLog : [];
@@ -1270,9 +1307,10 @@ function renderRanks() {
   $('#factorMeta').textContent = `${pts} / 999`;
   $('#factors').innerHTML = sc.factors.map(x => {
     const p = Math.round(x.max * Math.max(0, Math.min(1, x.v)));
-    return `<li class="${p >= x.max ? 'full' : ''}"><div class="f-top"><b>${esc(x.name)}</b><span class="f-pts"><em>${p}</em> / ${x.max}</span></div><div class="bar"><i style="width:${(p / x.max * 100).toFixed(0)}%"></i></div><small>${esc(x.now)} <span>&middot; ${esc(x.tip)}</span></small></li>`;
+    return `<li class="${p >= x.max ? 'full' : ''}"><div class="f-top"><b>${esc(x.name)}</b><span class="f-pts"><em>${p}</em> / ${x.max}</span></div><div class="bar"><i data-w="${(p / x.max * 100).toFixed(0)}"></i></div><small>${esc(x.now)} <span>&middot; ${esc(x.tip)}</span></small></li>`;
   }).join('');
 
+  requestAnimationFrame(() => requestAnimationFrame(() => $$('#factors .bar i').forEach(i => { i.style.width = i.dataset.w + '%'; })));
   // score over time
   const spk = log.slice(-30);
   if (spk.length >= 2) {
@@ -1340,7 +1378,7 @@ function renderRanks() {
     return `<li class="${b.name === sc.band.name ? 'cur' : sc.score > b.min ? 'done' : ''}"><span>${b.name === sc.band.name ? '&#9654;' : ''}</span>${esc(b.name)}<small>${range}</small></li>`;
   }).join('');
 }
-function planChanged() { save(); renderRanks(); processProgress(); }
+function planChanged() { save(); if (state.payCalc.useHours) { refreshPay(); renderNote(); update(); } renderRanks(); processProgress(); }
 $('#checks').addEventListener('click', e => {
   const li = e.target.closest('[data-check]'); if (!li) return;
   const id = li.dataset.check, on = !state.plan.checks[id];
@@ -1348,6 +1386,10 @@ $('#checks').addEventListener('click', e => {
   if (id === 'pension') state.plan.penOn = on;
   Sound.play(on ? 'coin' : 'tap'); on ? Haptics.success() : Haptics.light();
   planChanged();
+  if (on) {
+    const t = $(`#checks [data-check="${id}"] .tick`);
+    if (t) { t.classList.add('pop'); const c = centre(t); fx.sparkBurst(c.x, c.y, { count: 18, power: .6 }); }
+  }
 });
 $('#checks').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('[data-check]')) { e.preventDefault(); e.target.click(); } });
 $('#penOn').addEventListener('change', e => {
@@ -1439,6 +1481,7 @@ function openSettings() {
   $('#setPayday').value = state.nextPayday || '';
   $('#setCalm').checked = !!state.settings.calm; $('#setWhole').checked = !!state.settings.whole;
   $('#setRate').value = String(state.payCalc.rate); $('#setOt').value = String(state.payCalc.otMult);
+  $('#setWeekly').value = String(state.payCalc.weekly); $('#setPayDay').value = String(state.payCalc.payDay);
   renderBackupAge();
   $('#installHint').hidden = !(pwa.isIOS() && !pwa.isStandalone());
   const r = $('#resetBtn'); r.classList.remove('armed'); r.textContent = 'Reset everything';
@@ -1448,8 +1491,19 @@ function openSettings() {
 $('#settingsBtn').addEventListener('click', openSettings);
 $('#setCalm').addEventListener('change', e => { state.settings.calm = e.target.checked; save(); setCalm(e.target.checked); Sound.play('toggle', { on: e.target.checked }); Haptics.light(); });
 $('#setWhole').addEventListener('change', e => { state.settings.whole = e.target.checked; save(); update(); Sound.play('toggle', { on: e.target.checked }); Haptics.light(); });
-$('#setRate').addEventListener('change', e => { const v = parseNum(e.target.value); if (v > 0) { state.payCalc.rate = round2(v); save(); } e.target.value = String(state.payCalc.rate); });
-$('#setOt').addEventListener('change', e => { const v = parseNum(e.target.value); if (v >= 1) { state.payCalc.otMult = round2(v); save(); } e.target.value = String(state.payCalc.otMult); });
+const payChanged = () => { refreshPay(); renderNote(); update(); renderHeader(); };
+$('#setRate').addEventListener('change', e => { const v = parseNum(e.target.value); if (v > 0) { state.payCalc.rate = round2(v); payChanged(); } e.target.value = String(state.payCalc.rate); });
+$('#setOt').addEventListener('change', e => { const v = parseNum(e.target.value); if (v >= 1) { state.payCalc.otMult = round2(v); payChanged(); } e.target.value = String(state.payCalc.otMult); });
+$('#setWeekly').addEventListener('change', e => {
+  const v = parseNum(e.target.value);
+  if (v > 0 && v <= 80) { state.payCalc.weekly = round2(v); state.payCalc.hours = Money.usualHours(state.freq, state.payCalc.weekly); state.payCalc.otHours = 0; payChanged(); }
+  e.target.value = String(state.payCalc.weekly);
+});
+$('#setPayDay').addEventListener('change', e => {
+  const v = Math.round(parseNum(e.target.value));
+  if (v >= 1 && v <= 31) { state.payCalc.payDay = v; if (state.freq === 'monthly') { state.nextPayday = nextOnDay(v); $('#setPayday').value = state.nextPayday; } save(); renderNote(); renderHeader(); }
+  e.target.value = String(state.payCalc.payDay);
+});
 function backupDays() { return state.lastBackup ? Math.floor((Date.now() - state.lastBackup) / 864e5) : null; }
 function renderBackupAge() {
   const d = backupDays();
@@ -1613,7 +1667,8 @@ applySettings();
 if (state.settings.calm) setCalm(true);
 renderAll();
 // Nudge a backup every couple of weeks once there's something worth losing.
-setTimeout(() => {
+setTimeout(function nag() {
+  if (openSheetRef || splitting) return setTimeout(nag, 5000);
   const d = backupDays();
   if (state.history.length >= 2 && (d === null || d > 14) && Date.now() - state.backupNag > 3 * 864e5) {
     state.backupNag = Date.now(); save();
