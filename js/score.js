@@ -49,6 +49,7 @@ export function phase(now = new Date()) {
 function totalFor(state, id) {
   let t = 0;
   for (const h of state.history || []) if (h.cur === state.cur) for (const p of h.parts || []) if (p.id === id) t += n(p.amt);
+  for (const m of state.moves || []) if (m.b === id && (m.cur || state.cur) === state.cur) t += n(m.amt);
   return t;
 }
 

@@ -128,6 +128,7 @@
           <div class="sec-head">
             <h2>Your <em>buckets</em></h2>
             <div class="chips" id="presets">
+              <button class="chip sm mine" data-preset="mine">My plan</button>
               <button class="chip sm" data-preset="503020">50/30/20</button>
               <button class="chip sm" data-preset="saver">Saver</button>
               <button class="chip sm" data-preset="even">Even</button>
@@ -150,6 +151,18 @@
           <div><span class="eyebrow">Splits</span><b class="odo" id="vSplits"></b></div>
           <div><span class="eyebrow">Streak</span><b class="odo" id="vStreak"></b></div>
         </div>
+      </div>
+      <div class="glass pad" id="billsCard">
+        <div class="sec-head"><h3>Bills</h3><span class="eyebrow" id="billsMeta"></span></div>
+        <ul class="bills" id="billsList"></ul>
+        <form class="bill-add" id="billForm" autocomplete="off">
+          <input id="billName" maxlength="40" placeholder="Bill name" aria-label="Bill name" required>
+          <label class="field sm"><span>£</span><input id="billAmt" type="text" inputmode="decimal" placeholder="0" aria-label="Amount" required></label>
+          <label class="field sm"><span>Day</span><input id="billDay" type="number" min="1" max="31" inputmode="numeric" placeholder="1" aria-label="Day of month" required></label>
+          <select id="billBucket" aria-label="Paid from bucket"></select>
+          <button class="ghost" type="submit">Add bill</button>
+        </form>
+        <button class="ghost cal-btn" id="calBtn">Add paydays and bills to my calendar</button>
       </div>
       <div class="glass pad">
         <div class="sec-head"><h3>Last splits</h3><span class="eyebrow" id="chartMeta"></span></div>
@@ -177,6 +190,13 @@
         <span class="score-band" id="scoreBand"></span>
         <p class="score-blurb" id="scoreBlurb"></p>
         <span class="score-delta tab" id="scoreDelta"></span>
+        <div class="score-spark" id="scoreSpark" aria-hidden="true"></div>
+      </div>
+      <div class="glass pad">
+        <div class="sec-head"><h3>Where this split takes you</h3><span class="eyebrow">Savings buckets</span></div>
+        <div class="proj-chart" id="projChart"></div>
+        <div class="proj-stats" id="projStats"></div>
+        <p class="hint" id="projNote"></p>
       </div>
       <div class="glass pad">
         <div class="sec-head"><h3>What makes it</h3><span class="eyebrow" id="factorMeta"></span></div>
@@ -231,8 +251,16 @@
 
 <div class="sheet" id="keypad" hidden role="dialog" aria-label="Paycheck amount">
   <div class="grab"></div>
-  <span class="eyebrow">What landed this time</span>
-  <div class="kp-display"><span id="kpSym">£</span><span class="kp-val tab" id="kpVal">0</span><i class="kp-caret"></i></div>
+  <div class="kp-mode chips" id="kpMode" role="group" aria-label="Enter pay as">
+    <button class="chip sm" data-kpmode="amount" aria-pressed="true">Amount</button>
+    <button class="chip sm" data-kpmode="hours" aria-pressed="false">Hours worked</button>
+  </div>
+  <span class="eyebrow" id="kpEyebrow">What landed this time</span>
+  <div class="kp-display"><span id="kpSym">£</span><span class="kp-val tab" id="kpVal">0</span><span class="kp-unit" id="kpUnit" hidden>hrs</span><i class="kp-caret"></i></div>
+  <div class="kp-hours" id="kpHours" hidden>
+    <label class="kp-ot"><span>+ overtime hrs</span><input id="kpOt" type="text" inputmode="decimal" placeholder="0"></label>
+    <div class="kp-break tab" id="kpBreak"></div>
+  </div>
   <div class="kp-quick chips" id="kpQuick"></div>
   <div class="kp-grid" id="kpGrid">
     <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
@@ -247,10 +275,29 @@
 <div class="sheet" id="bucketSheet" hidden role="dialog" aria-label="Bucket settings">
   <div class="grab"></div>
   <div class="bs-head"><i class="bs-sw" id="bsSw"></i><input id="bsName" maxlength="28" aria-label="Bucket name"></div>
+  <div class="bs-money" id="bsMoney">
+    <div class="bs-bal"><span class="eyebrow">In this bucket now</span><b class="tab" id="bsBal">£0</b><small id="bsBalSub"></small></div>
+    <div class="bs-move">
+      <label class="field"><span id="bsMoveCur">£</span><input id="bsMoveAmt" type="text" inputmode="decimal" placeholder="Amount"></label>
+      <input class="bs-note" id="bsMoveNote" maxlength="40" placeholder="What for? (optional)">
+      <div class="bs-move-btns"><button class="ghost" id="bsTake">Take out</button><button class="ghost" id="bsPut">Put in</button></div>
+    </div>
+    <ol class="bs-moves" id="bsMoves"></ol>
+  </div>
+  <span class="eyebrow">Type</span>
+  <div class="chips bs-kind" id="bsKind" role="group" aria-label="Bucket type">
+    <button class="chip sm" data-kind="">Normal</button>
+    <button class="chip sm" data-kind="spend">Spending money</button>
+    <button class="chip sm" data-kind="lisa">LISA (+25%)</button>
+  </div>
+  <p class="hint" id="bsKindHint"></p>
+  <span class="eyebrow">Icon</span>
+  <div class="bs-icons" id="bsIcons"></div>
   <span class="eyebrow">Colour</span>
   <div class="swatches" id="bsColors"></div>
   <span class="eyebrow">Goal (optional)</span>
   <label class="field"><span id="bsCur">£</span><input id="bsGoal" type="text" inputmode="decimal" placeholder="No goal"></label>
+  <label class="field bs-date"><span>By</span><input id="bsGoalDate" type="date" aria-label="Goal date (optional)"></label>
   <p class="hint" id="bsProgress"></p>
   <label class="set-row bs-auto"><span><b>Moves automatically</b><small>Standing order or bank rule already handles it. Pre-stamped in the Transfer Run.</small></span><input type="checkbox" class="tgl" id="bsAuto"></label>
   <div class="bs-actions">
@@ -265,6 +312,10 @@
   <div class="set-list">
     <label class="set-row"><span><b>Sound</b><small>Works with the silent switch on</small></span><input type="checkbox" class="tgl" id="setSound"></label>
     <label class="set-row"><span><b>Haptics</b><small>Taps and thumps on iPhone</small></span><input type="checkbox" class="tgl" id="setHaptics"></label>
+    <label class="set-row"><span><b>Calm mode</b><small>Smoke, sparks and confetti only when you cut. Saves battery</small></span><input type="checkbox" class="tgl" id="setCalm"></label>
+    <label class="set-row"><span><b>Whole pounds</b><small>Round buckets down to whole pounds. Easier bank transfers</small></span><input type="checkbox" class="tgl" id="setWhole"></label>
+    <label class="set-row"><span><b>Hourly rate</b><small>For entering pay as hours worked</small></span><input type="text" inputmode="decimal" id="setRate" class="set-num"></label>
+    <label class="set-row"><span><b>Overtime pays</b><small>Times your hourly rate</small></span><input type="text" inputmode="decimal" id="setOt" class="set-num"></label>
     <label class="set-row"><span><b>Tilt effects</b><small>Move your phone, the note catches the light</small></span><input type="checkbox" class="tgl" id="setMotion"></label>
     <div class="set-row set-notes"><span><b>Note colour</b><small>Which note leads. The other backs it up</small></span>
       <div class="note-pick" id="notePick" role="group" aria-label="Note colour">
@@ -277,7 +328,8 @@
   </div>
   <div class="set-group">
     <span class="eyebrow">Backup</span>
-    <p class="hint">Your data lives on this phone only. Export now and then so a wiped phone doesn't wipe your history.</p>
+    <p class="hint">Your data lives on this phone only. Export now and then so a wiped phone doesn't wipe your history. On iPhone, pick <b>Save to Files</b> then iCloud Drive.</p>
+    <p class="hint backup-age" id="backupAge"></p>
     <div class="set-btns">
       <button class="ghost" id="exportBtn">Export backup</button>
       <label class="ghost file-btn">Import backup<input type="file" id="importFile" accept="application/json,.json"></label>

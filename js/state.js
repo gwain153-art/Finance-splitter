@@ -26,7 +26,12 @@ export function defaults() {
     cur: '£',
     nextPayday: null,
     touched: false,
-    settings: { sound: true, haptics: true, motion: false, note: '50' },
+    settings: { sound: true, haptics: true, motion: false, note: '50', whole: false, calm: false },
+    payCalc: { useHours: false, rate: 8, otMult: 1.5, hours: 184.2, otHours: 0 },
+    moves: [],
+    bills: [],
+    lastBackup: 0,
+    backupNag: 0,
     unlocked: {},
     progressFrom: 0,
     plan: { checks: {}, penOn: false, gross: 17680 },
@@ -50,6 +55,7 @@ function normalise(s) {
   out.v = 2;
   out.settings = Object.assign(defaults().settings, s.settings || {});
   if (out.settings.note !== '20') out.settings.note = '50';
+  out.settings.whole = !!out.settings.whole; out.settings.calm = !!out.settings.calm;
   if (typeof s.sound === 'boolean') out.settings.sound = s.sound;
   delete out.sound;
   out.unlocked = s.unlocked && typeof s.unlocked === 'object' ? s.unlocked : {};
@@ -61,8 +67,18 @@ function normalise(s) {
   if (!(+s.resets >= 1)) { out.unlocked = {}; out.progressFrom = Date.now(); out.resets = 1; justReset = true; }
   out.buckets = (Array.isArray(s.buckets) ? s.buckets : d.buckets).map(b => ({
     id: b.id || uid(), name: String(b.name ?? 'Bucket'), mode: b.mode === 'fixed' ? 'fixed' : 'pct',
-    value: Math.max(0, +b.value || 0), color: reshade(b.color || SHADES[0]), goal: b.goal > 0 ? +b.goal : null, auto: !!b.auto
+    value: Math.max(0, +b.value || 0), color: reshade(b.color || SHADES[0]), goal: b.goal > 0 ? +b.goal : null, auto: !!b.auto,
+    goalDate: /^\d{4}-\d{2}-\d{2}$/.test(b.goalDate || '') ? b.goalDate : null,
+    kind: ['lisa', 'spend'].includes(b.kind) ? b.kind : '', icon: typeof b.icon === 'string' ? b.icon : ''
   }));
+  const pc = s.payCalc && typeof s.payCalc === 'object' ? s.payCalc : {};
+  out.payCalc = { useHours: !!pc.useHours, rate: +pc.rate > 0 ? +pc.rate : 8, otMult: +pc.otMult > 0 ? +pc.otMult : 1.5, hours: +pc.hours >= 0 ? +pc.hours : 184.2, otHours: +pc.otHours >= 0 ? +pc.otHours : 0 };
+  out.moves = (Array.isArray(s.moves) ? s.moves : []).filter(m => m && m.b && Number.isFinite(+m.amt) && +m.amt !== 0)
+    .map(m => ({ id: m.id || uid(), t: +m.t || Date.now(), b: String(m.b), amt: round2(+m.amt), note: String(m.note || '').slice(0, 60), cur: m.cur || out.cur || '£' })).slice(-2000);
+  out.bills = (Array.isArray(s.bills) ? s.bills : []).filter(x => x && x.name).map(x => ({
+    id: x.id || uid(), name: String(x.name).slice(0, 40), amt: Math.max(0, round2(+x.amt || 0)), day: clamp(Math.round(+x.day || 1), 1, 31), bucket: x.bucket || null
+  }));
+  out.lastBackup = +s.lastBackup || 0; out.backupNag = +s.backupNag || 0;
   // v1 history parts had no bucket id; match on name so goals still count.
   const byName = new Map(out.buckets.map(b => [b.name.trim().toLowerCase(), b.id]));
   // Splits made before the Transfer Run existed count as already banked.
@@ -119,7 +135,9 @@ export function resetProgress() { state.unlocked = {}; state.progressFrom = Date
 
 /* ---------- money ---------- */
 export function amountOf(b, pay) {
-  return round2(Math.max(0, b.mode === 'pct' ? pay * b.value / 100 : b.value));
+  const a = Math.max(0, b.mode === 'pct' ? pay * b.value / 100 : b.value);
+  // Whole pounds: easier to type into a bank app. The pennies stay in "left to assign".
+  return state && state.settings && state.settings.whole ? Math.floor(a + 1e-9) : round2(a);
 }
 export function compute() {
   const pay = Math.max(0, +state.pay || 0);
@@ -141,10 +159,33 @@ export function setPartDone(h, i, done) {
 }
 export const nextSerialN = () => state.history.reduce((m, h) => Math.max(m, h.n || 0), 0) + 1;
 
-export function bucketTotal(id) {
+// Everything ever cut into a bucket (ignores money taken out).
+export function cutTotal(id) {
   let t = 0;
   for (const h of state.history) if (h.cur === state.cur) for (const p of h.parts) if (p.id === id) t += p.amt;
   return round2(t);
+}
+// What's actually in the bucket now: cut in, plus manual put-ins, minus take-outs.
+export function bucketTotal(id) {
+  let t = cutTotal(id);
+  for (const m of state.moves || []) if (m.b === id && (m.cur || state.cur) === state.cur) t += m.amt;
+  return round2(t);
+}
+export function addMove(b, amt, note = '') {
+  const m = { id: uid(), t: Date.now(), b, amt: round2(amt), note: String(note).slice(0, 60), cur: state.cur };
+  state.moves.push(m); save(); return m;
+}
+export function removeMove(id) { state.moves = state.moves.filter(m => m.id !== id); save(); }
+export const movesFor = id => (state.moves || []).filter(m => m.b === id && (m.cur || state.cur) === state.cur).sort((a, b) => b.t - a.t);
+// LISA: 25% bonus on what goes in, up to £4,000 a tax year (6 April to 5 April).
+export function lisaBonus(id) {
+  const byYear = new Map();
+  const ty = t => { const d = new Date(t); const y = d.getFullYear(); return (d.getMonth() > 3 || (d.getMonth() === 3 && d.getDate() >= 6)) ? y : y - 1; };
+  const add = (t, a) => { if (a > 0) byYear.set(ty(t), (byYear.get(ty(t)) || 0) + a); };
+  for (const h of state.history) if (h.cur === state.cur) for (const p of h.parts) if (p.id === id) add(h.t, p.amt);
+  for (const m of state.moves || []) if (m.b === id && m.amt > 0) add(m.t, m.amt);
+  let bonus = 0; byYear.forEach(v => { bonus += Math.min(v, 4000) * 0.25; });
+  return round2(bonus);
 }
 
 /* ---------- formatting ---------- */

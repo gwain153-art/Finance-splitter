@@ -8,8 +8,8 @@
   --line:#2B2732;
   --line-2:#413B4A;
   --text:#F2F0F5;
-  --muted:#9791A0;
-  --dim:#655F6E;
+  --muted:#ABA5B4;
+  --dim:#7E7888;
   /* accent = the chosen note (js/theme.js sets these; defaults are the £50) */
   --crimson:#D0263F;
   --crimson-hi:#FF4B62;
@@ -45,7 +45,7 @@ button{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-se
 [hidden]{display:none!important}
 :focus-visible{outline:2px solid var(--crimson-hi);outline-offset:2px}
 .tab{font-variant-numeric:tabular-nums}
-.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 .glass{background:var(--glass);border:1px solid var(--line);border-radius:22px;box-shadow:0 30px 60px -40px #000,inset 0 1px 0 rgba(255,255,255,.05)}
 .pad{padding:18px}
 
@@ -672,3 +672,94 @@ body,.note,.btn-primary,.chip,.cut-track,.tabbar,.pending-strip{transition-prope
 .cash small b{color:var(--text);font-weight:600}
 .note .note-edit{display:none}
 .note .note-serial{color:rgba(255,255,255,.8)}
+
+/* ---------- v6: balances, plan, bills, calm ---------- */
+.swatch{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;color:#fff}
+.swatch svg{width:15px;height:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.b-status{position:relative;margin-top:8px;padding-top:8px;border-top:1px dashed rgba(255,255,255,.08);font-size:12.5px;color:var(--muted);line-height:1.5}
+.b-status b{color:var(--text)}
+.b-status .neg{color:var(--crimson-hi)}
+.b-status .plus{color:var(--alt-hi)}
+.b-status .dot{font-style:normal;color:var(--dim);margin:0 2px}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid}
+.pill.ok{color:var(--alt-hi);border-color:rgba(var(--b1),.55);background:rgba(var(--b1),.15)}
+.pill.bad{color:var(--crimson-hi);border-color:rgba(var(--a1),.55);background:rgba(var(--a1),.15)}
+.chip.mine{border-color:rgba(var(--a2),.6);color:var(--text);box-shadow:0 0 14px -4px var(--crimson)}
+/* keypad hours */
+.kp-mode{justify-content:center;margin-bottom:4px}
+.kp-unit{font-family:var(--display);font-weight:900;font-size:28px;color:var(--muted);margin-left:8px;align-self:flex-end;padding-bottom:10px}
+.kp-hours{display:flex;flex-direction:column;gap:8px}
+.kp-ot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;border:1px solid var(--line-2);border-radius:12px;background:rgba(0,0,0,.3);font-size:13px;color:var(--muted)}
+.kp-ot input{width:90px;text-align:right;background:none;border:0;outline:0;color:var(--text);font-family:var(--mono);font-size:17px}
+.kp-break{display:flex;flex-direction:column;font-size:13px}
+.kp-break div{display:flex;justify-content:space-between;padding:4px 2px;color:var(--muted)}
+.kp-break div b{color:var(--text);font-family:var(--mono);font-weight:500}
+.kp-break .tot{border-top:1px solid var(--line);margin-top:2px;padding-top:7px}
+.kp-break .tot span,.kp-break .tot b{color:var(--text);font-weight:800}
+.kp-break small{color:var(--dim);font-size:11px;padding:2px}
+/* bucket sheet money */
+.bs-money{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(160deg,rgba(var(--a3),.35),rgba(0,0,0,.3))}
+.bs-bal{display:flex;flex-direction:column;gap:2px}
+.bs-bal b{font-family:var(--display);font-weight:900;font-size:40px;line-height:1}
+.bs-bal small{font-size:12px;color:var(--muted)}
+.bs-move{display:grid;grid-template-columns:1fr;gap:8px}
+.bs-move .field{height:46px}
+.bs-note{height:42px;border-radius:12px;border:1px solid var(--line-2);background:rgba(0,0,0,.3);padding:0 14px;font-size:15px;color:var(--text);outline:0}
+.bs-note:focus{border-color:var(--crimson)}
+.bs-move-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bs-move-btns button{height:44px;font-weight:700}
+#bsTake{border-color:rgba(var(--a1),.6)}
+#bsPut{border-color:rgba(var(--b1),.6)}
+.bs-moves{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.bs-moves:empty{display:none}
+.bs-moves li{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+.bs-moves .when{font-family:var(--mono);font-size:11px;color:var(--dim);width:48px}
+.bs-moves .what{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.bs-moves .neg{color:var(--crimson-hi);font-family:var(--mono)}
+.bs-moves .plus{color:var(--alt-hi);font-family:var(--mono)}
+.bs-moves .x,.bills .x{background:none;border:0;color:var(--dim);font-size:18px;padding:2px 6px;border-radius:8px}
+.bs-date{margin-top:8px;height:46px}
+.bs-date input{color-scheme:dark}
+.bs-kind{flex-wrap:wrap}
+.bs-icons{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.bs-icons button{aspect-ratio:1;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--muted);display:grid;place-items:center}
+.bs-icons button svg{width:20px;height:20px}
+.bs-icons button[aria-pressed="true"]{background:var(--c,var(--crimson));color:#fff;border-color:transparent;box-shadow:0 0 14px var(--c,var(--crimson))}
+/* bills */
+.bills{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column}
+.bills li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.bills li:first-child{border-top:0}
+.bills li.empty{font-size:13px;color:var(--muted)}
+.bills .b-ic{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;background:var(--c);color:#fff;box-shadow:0 0 12px -2px var(--c)}
+.bills .b-ic svg{width:18px;height:18px}
+.bills .b-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.bills .b-txt small{font-size:12px;color:var(--muted)}
+.bills .b-txt em{font-style:normal;color:var(--crimson-hi)}
+.bills li.warn{background:linear-gradient(90deg,rgba(var(--a1),.18),transparent);border-radius:12px;padding-left:8px}
+.bill-add{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.bill-add input#billName{grid-column:1/-1;height:44px;border-radius:12px;border:1px solid var(--line-2);background:rgba(0,0,0,.3);padding:0 14px;font-size:15px;color:var(--text);outline:0}
+.bill-add .field.sm{height:44px}
+.bill-add .field.sm span{font-size:12px;color:var(--muted)}
+.bill-add select{grid-column:1/-1;height:44px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--text);padding:0 12px;font-size:15px}
+.bill-add button{grid-column:1/-1;height:44px;font-weight:700}
+.cal-btn{width:100%;margin-top:10px;height:44px}
+/* settings */
+.set-num{width:84px;text-align:right;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;padding:8px 10px;font-size:16px;font-family:var(--mono);color:var(--text)}
+.backup-age{margin-top:6px}
+.backup-age.stale{color:var(--crimson-hi)}
+/* score extras */
+.score-spark{width:min(280px,80vw);margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.score-spark svg{width:100%;height:auto;overflow:visible}
+.score-spark small{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.proj-chart svg{width:100%;height:auto;display:block;margin-top:10px}
+.proj-chart .g-tick{fill:var(--muted);font-family:var(--mono);font-size:10px}
+.proj-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
+.proj-stats div{padding:10px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.25);text-align:center}
+.proj-stats span{display:block;font-size:11px;color:var(--muted);line-height:1.25}
+.proj-stats b{display:block;font-family:var(--display);font-weight:900;font-size:26px;margin-top:4px}
+#view-ranks .hint{line-height:1.45}
+/* header pill colour by band */
+.rank-pill[data-band="2"] .rr-fill{stroke:var(--acc-soft);filter:drop-shadow(0 0 3px var(--crimson-hi))}
+.rank-pill[data-band="3"] .rr-fill,.rank-pill[data-band="4"] .rr-fill{stroke:var(--alt-hi);filter:drop-shadow(0 0 4px var(--alt))}
+/* calm */
+body.calm .bg-fallback{opacity:.85}

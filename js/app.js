@@ -1,8 +1,10 @@
 import {
   state, save, compute, fmt, fmt0, fmtShort, mkFormat, parseNum, esc, uid, round2, clamp,
   SHADES, FREQ, bucketTotal, nextPayday, exportJSON, replaceState, resetState,
-  pending, pendingLeft, setPartDone, nextSerialN, resetProgress, justReset
+  pending, pendingLeft, setPartDone, nextSerialN, resetProgress, justReset,
+  amountOf, cutTotal, addMove, removeMove, movesFor, lisaBonus, toISO
 } from './state.js';
+import * as Money from './money.js';
 
 /* ---------- optional modules: the app still runs if one of them fails ---------- */
 const noop = () => {};
@@ -38,8 +40,19 @@ let bg = NOBG;
 try { if (createBackground) bg = createBackground($('#bg'), { reduceMotion: reduce }) || NOBG; } catch (e) { console.warn(e); }
 if (!bg.ok) $('#bg').hidden = true;
 const NOFX = { sparkBurst: noop, confetti: noop, shockwave: noop, trail: noop, flash: noop, playSplit: null };
-let fx = NOFX;
-try { if (createFx) fx = createFx($('#fx'), { reduceMotion: reduce }) || NOFX; } catch (e) { console.warn(e); }
+let rawFx = NOFX;
+try { if (createFx) rawFx = createFx($('#fx'), { reduceMotion: reduce }) || NOFX; } catch (e) { console.warn(e); }
+// Calm mode: effects only while a cut is playing.
+const fx = new Proxy({}, { get(_, k) { const v = rawFx[k]; if (typeof v !== 'function' || k === 'playSplit') return v; return (...a) => (state.settings.calm && !splitting ? undefined : v.apply(rawFx, a)); } });
+function setCalm(on) {
+  document.body.classList.toggle('calm', on);
+  if (on) { try { bg.destroy && bg.destroy(); } catch (e) {} bg = NOBG; $('#bg').hidden = true; }
+  else if (!bg.ok && createBackground) {
+    const c = $('#bg'), fresh = c.cloneNode(false); c.replaceWith(fresh); fresh.hidden = false;
+    try { bg = createBackground(fresh, { reduceMotion: reduce }) || NOBG; } catch (e) { bg = NOBG; }
+    if (!bg.ok) fresh.hidden = true; else { try { applyTheme(state.settings.note || '50'); } catch (e) {} bg.setMood(baseMood()); }
+  }
+}
 
 /* ---------- toast ---------- */
 let toastT;
@@ -128,7 +141,38 @@ const serial = n => `CC-${String(n).padStart(4, '0')}`;
 function touch() { if (!state.touched) { state.touched = true; $('#exampleTag').hidden = true; } save(); }
 
 let kp = '';
+let kpMode = 'amount';
+function kpPay() {
+  const pc = state.payCalc, gross = Money.grossFromHours(parseNum(kp), pc.rate, parseNum($('#kpOt').value), pc.otMult);
+  return Money.takeHome(gross, state.freq, { pension: !!state.plan.penOn });
+}
+function kpSetMode(m) {
+  kpMode = m; state.payCalc.useHours = m === 'hours';
+  $$('#kpMode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.kpmode === m));
+  const hrs = m === 'hours';
+  $('#kpHours').hidden = !hrs; $('#kpUnit').hidden = !hrs; $('#kpSym').hidden = hrs;
+  $('#kpEyebrow').textContent = hrs ? `Hours this ${state.freq === 'monthly' ? 'month' : state.freq === 'weekly' ? 'week' : 'fortnight'} at ${fmt(state.payCalc.rate)}/hr` : 'What landed this time';
+  kp = hrs ? (state.payCalc.hours ? String(state.payCalc.hours) : '') : (state.pay ? String(state.pay) : '');
+  $('#kpOt').value = hrs && state.payCalc.otHours ? String(state.payCalc.otHours) : '';
+  kpQuickChips(); kpRender();
+}
+function kpQuickChips() {
+  if (kpMode === 'hours') {
+    const u = Money.usualHours(state.freq);
+    $('#kpQuick').innerHTML = `<button class="chip sm" data-pay="${u}">Usual: ${u} hrs</button>` + (kp ? '<button class="chip sm" data-pay="clear">Clear</button>' : '');
+    return;
+  }
+  const seen = new Set(), quick = [];
+  for (const h of state.history) { if (h.cur === state.cur && !seen.has(h.pay) && h.pay !== state.pay) { seen.add(h.pay); quick.push(h.pay); } if (quick.length >= 3) break; }
+  $('#kpQuick').innerHTML = quick.map(p => `<button class="chip sm" data-pay="${p}">${esc(fmt(p))}</button>`).join('') + (kp ? `<button class="chip sm" data-pay="clear">Clear</button>` : '');
+}
+function kpBreak() {
+  if (kpMode !== 'hours') return;
+  const t = kpPay();
+  $('#kpBreak').innerHTML = `<div><span>Gross</span><b>${fmt(t.gross)}</b></div><div><span>Tax</span><b>−${fmt(t.tax)}</b></div><div><span>National Insurance</span><b>−${fmt(t.ni)}</b></div>${t.pension ? `<div><span>Pension (you)</span><b>−${fmt(t.pension)}</b></div>` : ''}<div class="tot"><span>Take-home</span><b>${fmt(t.net)}</b></div><small>Estimate on a standard 1257L tax code. Your payslip wins.</small>`;
+}
 function kpRender(pop) {
+  kpBreak();
   const v = $('#kpVal');
   let show = kp || '0';
   const [i, d] = show.split('.');
@@ -154,16 +198,13 @@ function kpPress(k, btn) {
   kpRender(true);
 }
 function openKeypad() {
-  kp = state.pay ? String(state.pay) : '';
   $('#kpSym').textContent = state.cur;
-  const seen = new Set(), quick = [];
-  for (const h of state.history) { if (h.cur === state.cur && !seen.has(h.pay) && h.pay !== state.pay) { seen.add(h.pay); quick.push(h.pay); } if (quick.length >= 3) break; }
-  $('#kpQuick').innerHTML = quick.map(p => `<button class="chip sm" data-pay="${p}">${esc(fmt(p))}</button>`).join('') + (kp ? `<button class="chip sm" data-pay="clear">Clear</button>` : '');
-  kpRender();
+  kpSetMode(state.payCalc.useHours ? 'hours' : 'amount');
   showSheet($('#keypad'), { onClose: commitKeypad });
 }
 function commitKeypad() {
-  const v = round2(parseNum(kp));
+  if (kpMode === 'hours') { state.payCalc.hours = round2(parseNum(kp)); state.payCalc.otHours = round2(parseNum($('#kpOt').value)); save(); }
+  const v = kpMode === 'hours' ? kpPay().net : round2(parseNum(kp));
   if (v === state.pay) return;
   state.pay = v; touch();
   const n = $('#note'); n.classList.remove('bump'); void n.offsetWidth; n.classList.add('bump');
@@ -187,11 +228,14 @@ $('#kpGrid').addEventListener('pointerdown', e => {
 $('#kpQuick').addEventListener('click', e => {
   const b = e.target.closest('[data-pay]'); if (!b) return;
   kp = b.dataset.pay === 'clear' ? '' : String(b.dataset.pay);
+  kpQuickChips();
   Sound.play('tap'); Haptics.light(); kpRender(true);
 });
 $('#kpDone').addEventListener('click', () => closeSheet());
+$('#kpMode').addEventListener('click', e => { const b = e.target.closest('[data-kpmode]'); if (!b || b.dataset.kpmode === kpMode) return; Sound.play('toggle', { on: true }); Haptics.light(); kpSetMode(b.dataset.kpmode); save(); });
+$('#kpOt').addEventListener('input', kpBreak);
 addEventListener('keydown', e => {
-  if (!openSheetRef || openSheetRef.el.id !== 'keypad') return;
+  if (!openSheetRef || openSheetRef.el.id !== 'keypad' || e.target.id === 'kpOt') return;
   if (/^[0-9]$/.test(e.key)) kpPress(e.key);
   else if (e.key === '.' || e.key === ',') kpPress('.');
   else if (e.key === 'Backspace') kpPress('back');
@@ -288,7 +332,7 @@ function cardEl(b, pay) {
   el.innerHTML = `
     <div class="liquid" aria-hidden="true"><svg viewBox="0 0 200 12" preserveAspectRatio="none"><path d="${WAVE}"/></svg><svg viewBox="0 0 200 12" preserveAspectRatio="none"><path d="${WAVE}"/></svg></div>
     <div class="b-row1">
-      <button class="swatch" aria-label="Change colour"></button>
+      <button class="swatch" aria-label="Change colour">${icon(bucketIcon(b))}</button>
       <input class="b-name" id="name-${b.id}" value="${esc(b.name)}" maxlength="28" aria-label="Bucket name" enterkeyhint="done">
       ${b.auto ? '<span class="b-auto" title="Moves automatically">AUTO</span>' : ''}
       <button class="more" aria-label="Options for ${esc(b.name)}">${DOTS}</button>
@@ -305,7 +349,8 @@ function cardEl(b, pay) {
     </div>
     <input class="b-range" id="rng-${b.id}" type="range" min="0" max="${rangeMax(b, pay)}" step="${pct ? .5 : 5}" value="${b.value}" aria-label="${esc(b.name)} slider">
     <div class="cash" aria-hidden="true"><span class="pile p50"></span><span class="pile p20"></span><small></small></div>
-    <div class="b-foot tab"><span class="b-share"></span><span class="b-goal"></span><span class="b-year"></span></div>`;
+    <div class="b-foot tab"><span class="b-share"></span><span class="b-goal"></span><span class="b-year"></span></div>
+    <div class="b-status tab" hidden></div>`;
   return el;
 }
 function renderBuckets() {
@@ -326,6 +371,33 @@ function renderBuckets() {
   renderSweepChips();
   update();
 }
+// The one line under a bucket that matters: pace, daily allowance or LISA bonus.
+function perMonthOf(amt) { return amt * FREQ[state.freq] / 12; }
+function lastCutPart(id) { for (const h of state.history) if (h.cur === state.cur) { const p = h.parts.find(x => x.id === id); if (p) return { h, p }; } return null; }
+function spendLeft(b, plannedAmt) {
+  const last = lastCutPart(b.id);
+  const base = last ? last.p.amt : plannedAmt, since = last ? last.h.t : 0;
+  const out = movesFor(b.id).filter(m => m.t >= since).reduce((s2, m) => s2 + m.amt, 0);
+  const left = round2(base + out), pd = nextPayday();
+  const days = pd ? Math.max(1, pd.days) : Math.round(365 / FREQ[state.freq]);
+  return { left, days, perDay: left / days, cut: !!last };
+}
+function statusLine(b, amt, pay) {
+  const bits = [];
+  if (b.kind === 'spend') {
+    const s2 = spendLeft(b, amt);
+    bits.push(s2.left < 0 ? `<b class="neg">${esc(fmt(-s2.left))} over</b> until payday` : `<b>${esc(fmt(s2.left))}</b> left · <b>${esc(fmt(s2.perDay))}</b>/day for ${s2.days} day${s2.days === 1 ? '' : 's'}`);
+  } else {
+    const bal = bucketTotal(b.id);
+    if (bal !== cutTotal(b.id) || bal > 0) bits.push(`<b>${esc(fmt(bal))}</b> in it now`);
+  }
+  if (b.kind === 'lisa') { const bo = lisaBonus(b.id); if (bo > 0) bits.push(`<b class="plus">+${esc(fmt(bo))}</b> bonus`); }
+  if (b.goal && b.goalDate) {
+    const pc = Money.pace({ goal: b.goal, have: bucketTotal(b.id) + (b.kind === 'lisa' ? lisaBonus(b.id) : 0), goalDate: b.goalDate, perMonth: perMonthOf(amt) });
+    if (pc) bits.push(pc.done ? '<span class="pill ok">Goal hit</span>' : pc.late ? `<span class="pill bad">Date passed, ${esc(fmt(pc.gap))} short</span>` : pc.ok ? '<span class="pill ok">On track</span>' : `<span class="pill bad">Behind: +${esc(fmt(pc.short))}/mo needed</span>`);
+  }
+  return bits.join(' <i class="dot">·</i> ');
+}
 function update() {
   const c = compute(), mult = FREQ[state.freq];
   c.rows.forEach(r => {
@@ -335,10 +407,13 @@ function update() {
     el.querySelector('.b-share').textContent = `${(share * 100).toFixed(1)}% of pay`;
     el.querySelector('.b-year').textContent = `${fmtShort(r.amt * mult)}/yr`;
     const g = el.querySelector('.b-goal');
+    const bonus = r.b.kind === 'lisa' ? lisaBonus(r.b.id) : 0;
     if (r.b.goal) {
-      const got = bucketTotal(r.b.id), p = clamp(got / r.b.goal, 0, 1);
+      const got = bucketTotal(r.b.id) + bonus, p = clamp(got / r.b.goal, 0, 1);
       g.innerHTML = `<span class="goal-mini"><span class="bar"><i style="width:${p * 100}%"></i></span>${Math.floor(p * 100)}%</span>`;
     } else g.textContent = '';
+    const st = el.querySelector('.b-status'), line = statusLine(r.b, r.amt, c.pay);
+    st.hidden = !line; st.innerHTML = line;
     const rng = el.querySelector('.b-range'), max = rangeMax(r.b, c.pay);
     if (+rng.max !== max) rng.max = max;
     rng.style.setProperty('--p', clamp(r.b.value / max * 100, 0, 100) + '%');
@@ -493,6 +568,16 @@ function addBucket(name = 'New bucket') {
   queueProgress();
 }
 
+// George's plan: £1,350 a month, emergency fund first, LISA money for 6 April.
+const MY_PLAN = [
+  { name: 'Emergency fund', value: 250, goal: 1500, icon: 'shield' },
+  { name: 'Second LISA year', value: 510, goal: 3000, goalDate: '2027-04-06', icon: 'house' },
+  { name: 'Cats (rent)', value: 150, icon: 'cat', auto: false },
+  { name: 'Bike: insurance + fuel', value: 150, icon: 'bike' },
+  { name: 'Driving', value: 40, icon: 'car' },
+  { name: 'Irregular: tools, servicing, clothes', value: 50, icon: 'tool' },
+  { name: 'Fun money', value: 200, icon: 'star', kind: 'spend' }
+];
 const PRESETS = {
   503020: [['Needs', 50], ['Wants', 30], ['Savings', 20]],
   saver: [['Bills', 45], ['Savings', 30], ['Investing', 15], ['Fun money', 10]],
@@ -501,7 +586,15 @@ const PRESETS = {
 $('#presets').addEventListener('click', e => {
   const p = e.target.closest('[data-preset]'); if (!p) return;
   const before = state.buckets;
-  state.buckets = PRESETS[p.dataset.preset].map(([name, value], i) => ({ id: uid(), name, mode: 'pct', value, color: SHADES[i], goal: null }));
+  if (p.dataset.preset === 'mine') {
+    // Keep ids for buckets with the same name so their history and balances carry over.
+    const byName = new Map(state.buckets.map(b => [b.name.trim().toLowerCase(), b]));
+    state.buckets = MY_PLAN.map((x, i) => {
+      const old = byName.get(x.name.toLowerCase());
+      return { id: old ? old.id : uid(), name: x.name, mode: 'fixed', value: x.value, color: SHADES[i % SHADES.length], goal: x.goal || null, goalDate: x.goalDate || null, auto: !!(old && old.auto), kind: x.kind || '', icon: x.icon };
+    });
+    if (!state.touched) { state.pay = 1350; state.freq = 'monthly'; renderNote(); renderFreq(); }
+  } else state.buckets = PRESETS[p.dataset.preset].map(([name, value], i) => ({ id: uid(), name, mode: 'pct', value, color: SHADES[i], goal: null }));
   touch(); renderBuckets(); Sound.play('whoosh'); Haptics.medium();
   const c = centre(list); bg.pulse(c.x, c.y, .7);
   toast(`Loaded ${p.textContent.trim()}`, { label: 'Undo', fn: () => { state.buckets = before; seen.clear(); touch(); renderBuckets(); } });
@@ -533,16 +626,68 @@ function openBucketSheet(id) {
   const sheet = $('#bucketSheet'); sheet.style.setProperty('--c', b.color);
   $('#bsName').value = b.name; $('#bsCur').textContent = state.cur;
   $('#bsGoal').value = b.goal ? String(b.goal) : '';
+  $('#bsGoalDate').value = b.goalDate || '';
   $('#bsAuto').checked = !!b.auto;
+  $('#bsMoveAmt').value = ''; $('#bsMoveNote').value = ''; $('#bsMoveCur').textContent = state.cur;
+  renderBsKind(b); renderBsIcons(b); renderBsMoney(b);
   $('#bsColors').innerHTML = SHADES.map(s => `<button style="--c:${s}" data-c="${s}" aria-label="Colour ${s}" aria-pressed="${s === b.color}"></button>`).join('');
   renderBsProgress(b);
   const del = $('#bsDelete'); del.classList.remove('armed'); del.textContent = 'Delete bucket';
   showSheet(sheet, { onClose: () => { bsId = null; renderBuckets(); queueProgress(); } });
 }
 function renderBsProgress(b) {
-  const got = bucketTotal(b.id);
-  $('#bsProgress').innerHTML = b.goal ? `<b>${fmt(got)}</b> banked of ${fmt(b.goal)} (${Math.floor(clamp(got / b.goal, 0, 1) * 100)}%). Counts every split since you made this bucket.` : got ? `<b>${fmt(got)}</b> banked here so far.` : 'Set a target and this bucket fills up as you split.';
+  const got = bucketTotal(b.id) + (b.kind === 'lisa' ? lisaBonus(b.id) : 0);
+  let txt = b.goal ? `<b>${fmt(got)}</b> of ${fmt(b.goal)} (${Math.floor(clamp(got / b.goal, 0, 1) * 100)}%).` : got ? `<b>${fmt(got)}</b> in here.` : 'Set a target and this bucket fills up as you split.';
+  if (b.goal && b.goalDate) {
+    const pc = Money.pace({ goal: b.goal, have: got, goalDate: b.goalDate, perMonth: perMonthOf(amountOf(b, compute().pay)) });
+    if (pc && pc.done) txt += ' Goal hit.';
+    else if (pc && pc.late) txt += ` The date's passed and you're ${fmt(pc.gap)} short.`;
+    else if (pc) txt += pc.ok ? ` On track: you need ${fmt(pc.need)} a month and you're putting in ${fmt(pc.have)}.${pc.finish ? ' Done around ' + dayFmt.format(pc.finish) + '.' : ''}` : ` Behind: you need ${fmt(pc.need)} a month but only put in ${fmt(pc.have)}. Add ${fmt(pc.short)} a month.`;
+  } else if (b.goal) txt += ' Add a date to see if you\'re on track.';
+  $('#bsProgress').innerHTML = txt;
 }
+const KIND_HINT = { '': 'A normal pot. Its balance is everything cut in, minus what you take out.', spend: 'Shows what\'s left and how much a day you can spend until payday. Log spends with Take out.', lisa: 'Adds the government\'s 25% bonus on what goes in, up to £4,000 a tax year.' };
+function renderBsKind(b) { $$('#bsKind button').forEach(x => x.setAttribute('aria-pressed', x.dataset.kind === (b.kind || ''))); $('#bsKindHint').textContent = KIND_HINT[b.kind || '']; }
+function renderBsIcons(b) {
+  const cur = bucketIcon(b);
+  $('#bsIcons').innerHTML = Object.keys(BICONS).map(k => `<button data-icon="${k}" aria-label="${k}" aria-pressed="${k === cur}">${icon(k)}</button>`).join('');
+}
+const moveDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
+function renderBsMoney(b) {
+  const bal = bucketTotal(b.id), bo = b.kind === 'lisa' ? lisaBonus(b.id) : 0;
+  $('#bsBal').textContent = fmt(bal + bo);
+  const cutIn = cutTotal(b.id), moved = round2(bal - cutIn);
+  $('#bsBalSub').textContent = [`${fmt(cutIn)} cut in`, moved ? `${moved > 0 ? '+' : '−'}${fmt(Math.abs(moved))} moved` : '', bo ? `+${fmt(bo)} bonus` : ''].filter(Boolean).join(' · ');
+  const ms = movesFor(b.id).slice(0, 8);
+  $('#bsMoves').innerHTML = ms.map(m => `<li><span class="when">${esc(moveDate.format(m.t))}</span><span class="what">${esc(m.note || (m.amt < 0 ? 'Taken out' : 'Put in'))}</span><b class="${m.amt < 0 ? 'neg' : 'plus'}">${m.amt < 0 ? '−' : '+'}${esc(fmt(Math.abs(m.amt)))}</b><button class="x" data-move="${m.id}" aria-label="Undo this">×</button></li>`).join('');
+}
+function bsMove(sign) {
+  const b = bsB(); if (!b) return;
+  const v = round2(parseNum($('#bsMoveAmt').value));
+  if (!(v > 0)) { Sound.play('error'); Haptics.error(); toast('Put an amount in first'); return; }
+  addMove(b.id, sign * v, $('#bsMoveNote').value.trim());
+  $('#bsMoveAmt').value = ''; $('#bsMoveNote').value = '';
+  Sound.play(sign < 0 ? 'coin' : 'sweep'); Haptics.success();
+  renderBsMoney(b); renderBsProgress(b); touch(); update();
+  toast(sign < 0 ? `${fmt(v)} out of ${b.name}` : `${fmt(v)} into ${b.name}`);
+  queueProgress();
+}
+$('#bsTake').addEventListener('click', () => bsMove(-1));
+$('#bsPut').addEventListener('click', () => bsMove(1));
+$('#bsMoves').addEventListener('click', e => {
+  const x = e.target.closest('[data-move]'); const b = bsB(); if (!x || !b) return;
+  removeMove(x.dataset.move); Sound.play('delete'); Haptics.light(); renderBsMoney(b); renderBsProgress(b); update(); queueProgress();
+});
+$('#bsKind').addEventListener('click', e => {
+  const k = e.target.closest('[data-kind]'); const b = bsB(); if (!k || !b) return;
+  b.kind = k.dataset.kind; touch(); Sound.play('toggle', { on: true }); Haptics.light();
+  renderBsKind(b); renderBsMoney(b); renderBsProgress(b);
+});
+$('#bsIcons').addEventListener('click', e => {
+  const k = e.target.closest('[data-icon]'); const b = bsB(); if (!k || !b) return;
+  b.icon = k.dataset.icon; touch(); Sound.play('tap'); Haptics.light(); renderBsIcons(b);
+});
+$('#bsGoalDate').addEventListener('change', e => { const b = bsB(); if (b) { b.goalDate = e.target.value || null; touch(); renderBsProgress(b); } });
 const bsB = () => state.buckets.find(x => x.id === bsId);
 $('#bsName').addEventListener('input', e => { const b = bsB(); if (b) { b.name = e.target.value; touch(); } });
 $('#bsGoal').addEventListener('input', e => { const b = bsB(); if (b) { const v = parseNum(e.target.value); b.goal = v > 0 ? v : null; touch(); renderBsProgress(b); } });
@@ -815,6 +960,25 @@ $('#pendingStrip').addEventListener('click', () => {
 /* =========================================================
    PROGRESS: achievements, rank ups, banners
    ========================================================= */
+const BICONS = {
+  house: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  bike: '<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-7h5l3 7M10 10 8 6H5M15 10l1-3h2"/>',
+  cat: '<path d="M5 20c-1-4 0-8 2-10L6 4l4 3h4l4-3-1 6c2 2 3 6 2 10z"/><circle cx="10" cy="13" r=".8"/><circle cx="14" cy="13" r=".8"/>',
+  car: '<path d="M4 16V12l2-5h12l2 5v4z"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/><path d="M4 12h16"/>',
+  piggy: '<path d="M19 11c0-3.3-3.1-6-7-6S5 7.7 5 11c0 1.8.9 3.4 2.3 4.5V19h3v-2h3.4v2h3v-3.5c.8-.6 1.5-1.3 1.9-2.2H21v-3h-2z"/><circle cx="15" cy="10" r=".8"/>',
+  card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/>',
+  food: '<path d="M7 3v8a2 2 0 0 0 4 0V3M9 11v10M17 3c-2 0-3 2-3 5s1 5 3 5v8"/>',
+  phone: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  tool: '<path d="M14 6a4 4 0 0 1 5 5l-9 9-4-4 9-9"/><path d="M4 20l2-2"/>',
+  gift: '<rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 13h18M12 9v12M12 9C10 5 6 6 8 9M12 9c2-4 6-3 4 0"/>',
+  shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>',
+  star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'
+};
+const ICON_GUESS = [[/emergency|rainy|buffer/i, 'shield'], [/lisa|house|deposit|home|rent|mortgage/i, 'house'], [/cat|pet|dog|vet/i, 'cat'], [/bike|125|motor/i, 'bike'],
+  [/driv|car|lesson|fuel|petrol/i, 'car'], [/invest|isa|stock|share|pension/i, 'chart'], [/sav/i, 'piggy'], [/bill|insur|subscr/i, 'card'],
+  [/food|grocer|lunch/i, 'food'], [/phone/i, 'phone'], [/tool|irregular|clothes|servic/i, 'tool'], [/gift|xmas|christmas|birthday/i, 'gift'], [/fun|spend|going out/i, 'star']];
+const bucketIcon = b => b.icon || (ICON_GUESS.find(([re]) => re.test(b.name || '')) || [])[1] || 'piggy';
 const ICONS = {
   blade: '<path d="M3 21 17 7l4-4-2 6L6 22z"/>',
   coin: '<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/>',
@@ -827,7 +991,7 @@ const ICONS = {
   star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
   shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>'
 };
-const icon = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n] || ICONS.star}</svg>`;
+const icon = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n] || BICONS[n] || ICONS.star}</svg>`;
 
 let lastLevel = progress ? progress.evaluate(state).level : 1;
 const scoreNow = () => (Score ? Score.score(state, fmt0) : null);
@@ -884,6 +1048,7 @@ function renderHeader() {
     const sc = scoreNow();
     $('#rankLvl').textContent = sc.score; $('#rankName').textContent = sc.band.name;
     $('#rankRing').style.strokeDashoffset = 94.25 * (1 - sc.score / Score.MAX);
+    $('#rankPill').dataset.band = sc.band.index;
   } else $('#rankPill').hidden = true;
   const pd = nextPayday(), pill = $('#paydayPill');
   pill.classList.remove('soon', 'today');
@@ -962,7 +1127,8 @@ function renderVault(newId) {
   const topAmt = rows[0]?.amt || 1;
   $('#vbars').innerHTML = rows.length ? rows.map(r => {
     const b = state.buckets.find(x => x.id === r.id);
-    const goal = b?.goal ? `<small>Goal ${Math.floor(clamp(r.amt / b.goal, 0, 1) * 100)}% of ${esc(fmt(b.goal))}</small>` : '';
+    const now = b ? bucketTotal(b.id) + (b.kind === 'lisa' ? lisaBonus(b.id) : 0) : r.amt;
+    const goal = b?.goal ? `<small>Goal ${Math.floor(clamp(now / b.goal, 0, 1) * 100)}% of ${esc(fmt(b.goal))}${Math.abs(now - r.amt) > .004 ? ` · ${esc(fmt(now))} in it now` : ''}</small>` : (b && Math.abs(now - r.amt) > .004 ? `<small>${esc(fmt(now))} in it now</small>` : '');
     return `<div class="vbar" style="--c:${r.color}"><span><i></i>${esc(r.name)}</span><b class="tab">${esc(fmt(r.amt))}</b><div class="bar"><i data-w="${(r.amt / topAmt * 100).toFixed(1)}"></i></div>${goal}</div>`;
   }).join('') : '<div class="empty">Nothing banked yet.</div>';
   requestAnimationFrame(() => requestAnimationFrame(() => $$('#vbars .bar i').forEach(i => i.style.width = i.dataset.w + '%')));
@@ -1009,6 +1175,51 @@ $('#clearBtn').addEventListener('click', e => {
   Sound.play('delete'); Haptics.heavy(); renderVault(); renderHeader(); renderNote();
   lastLevel = progress ? progress.evaluate(state).level : 1;
   toast('History wiped', { label: 'Undo', fn: () => { state.history = before; save(); renderVault(); renderHeader(); renderNote(); lastLevel = progress ? progress.evaluate(state).level : 1; } });
+});
+
+/* =========================================================
+   BILLS + CALENDAR
+   ========================================================= */
+function renderBills() {
+  const pd = nextPayday();
+  const rows = state.bills.map(b => ({ b, nx: Money.nextBillDate(b.day) })).sort((x, y) => x.nx.days - y.nx.days);
+  const monthly = state.bills.reduce((s2, b) => s2 + b.amt, 0);
+  $('#billsMeta').textContent = state.bills.length ? `${fmt(monthly)} a month` : '';
+  $('#billsList').innerHTML = rows.length ? rows.map(({ b, nx }) => {
+    const bk = state.buckets.find(x => x.id === b.bucket);
+    const before = pd && nx.days < pd.days;
+    const short = bk && before && bucketTotal(bk.id) < b.amt;
+    const when = nx.days === 0 ? 'today' : nx.days === 1 ? 'tomorrow' : `in ${nx.days} days`;
+    return `<li class="${short ? 'warn' : ''}"><span class="b-ic" style="--c:${bk ? bk.color : 'var(--line-2)'}">${icon(bk ? bucketIcon(bk) : 'card')}</span>
+      <span class="b-txt"><b>${esc(b.name)}</b><small>${ordinal(b.day)} · ${when}${bk ? ' · from ' + esc(bk.name) : ''}${short ? ` · <em>${esc(bk.name)} only has ${esc(fmt(bucketTotal(bk.id)))}</em>` : before ? ' · before payday' : ''}</small></span>
+      <b class="tab">${esc(fmt(b.amt))}</b><button class="x" data-bill="${b.id}" aria-label="Delete ${esc(b.name)}">×</button></li>`;
+  }).join('') : '<li class="empty">Add the things that go out every month: insurance, phone, subscriptions.</li>';
+  $('#billBucket').innerHTML = '<option value="">From which bucket?</option>' + state.buckets.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+}
+const ordinal = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
+$('#billForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#billName').value.trim(), amt = round2(parseNum($('#billAmt').value)), day = Math.round(parseNum($('#billDay').value));
+  if (!name || !(amt > 0) || !(day >= 1 && day <= 31)) { Sound.play('error'); Haptics.error(); toast('Name, amount and a day from 1 to 31'); return; }
+  state.bills.push({ id: uid(), name, amt, day, bucket: $('#billBucket').value || null });
+  e.target.reset(); save(); renderBills(); Sound.play('pop'); Haptics.medium(); toast(`${name} added`);
+});
+$('#billsList').addEventListener('click', e => {
+  const x = e.target.closest('[data-bill]'); if (!x) return;
+  const i = state.bills.findIndex(b => b.id === x.dataset.bill); if (i < 0) return;
+  const gone = state.bills.splice(i, 1)[0]; save(); renderBills(); Sound.play('delete'); Haptics.light();
+  toast(`${gone.name} removed`, { label: 'Undo', fn: () => { state.bills.splice(i, 0, gone); save(); renderBills(); } });
+});
+$('#calBtn').addEventListener('click', async () => {
+  const pd = nextPayday();
+  const dates = Score ? [
+    { id: 'bday', date: Score.DATES.bday, title: 'Turn 18: open the Dodl LISA', desc: 'Trust money lands. Pay £4,000 into the LISA before 5 April.' },
+    { id: 'taxend', date: Score.DATES.taxEnd, title: 'Last day: £4,000 into the LISA for this year\'s bonus' },
+    { id: 'newyear', date: Score.DATES.newYear, title: 'New tax year: second £4,000 into the LISA' },
+    { id: 'payrise', date: Score.DATES.payRise, title: 'Pay rise due: update Clean Cut' }
+  ] : [];
+  const ics = Money.buildICS({ payday: pd ? pd.date : null, freq: state.freq, bills: state.bills, dates, fmt });
+  if (await shareFile('clean-cut.ics', ics, 'text/calendar', 'Clean Cut dates')) toast(pd ? 'Calendar file made. Open it to add the dates' : 'Calendar file made. Set your payday in Settings to include paydays');
 });
 
 /* =========================================================
@@ -1061,6 +1272,36 @@ function renderRanks() {
     const p = Math.round(x.max * Math.max(0, Math.min(1, x.v)));
     return `<li class="${p >= x.max ? 'full' : ''}"><div class="f-top"><b>${esc(x.name)}</b><span class="f-pts"><em>${p}</em> / ${x.max}</span></div><div class="bar"><i style="width:${(p / x.max * 100).toFixed(0)}%"></i></div><small>${esc(x.now)} <span>&middot; ${esc(x.tip)}</span></small></li>`;
   }).join('');
+
+  // score over time
+  const spk = log.slice(-30);
+  if (spk.length >= 2) {
+    const W = 260, H = 44, lo = Math.min(...spk.map(e => e.s)), hi = Math.max(...spk.map(e => e.s)), span = Math.max(40, hi - lo);
+    const xy = spk.map((e, i) => [i / (spk.length - 1) * W, H - 4 - (e.s - lo) / span * (H - 8)]);
+    $('#scoreSpark').innerHTML = `<svg viewBox="0 0 ${W} ${H}"><path d="M${xy.map(p => p.map(v => v.toFixed(1)).join(' ')).join(' L')}" fill="none" stroke="url(#gGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${xy[xy.length - 1][0].toFixed(1)}" cy="${xy[xy.length - 1][1].toFixed(1)}" r="3.5" fill="#fff"/></svg><small>Last ${spk.length} days</small>`;
+  } else $('#scoreSpark').innerHTML = '<small>Your score history builds up here day by day.</small>';
+
+  // projection
+  const pay = compute().pay;
+  const saving = state.buckets.filter(b => progress && progress.isSavings(b.name));
+  const perMonth = saving.reduce((s2, b) => s2 + amountOf(b, pay), 0) * FREQ[state.freq] / 12;
+  const now0 = saving.reduce((s2, b) => s2 + bucketTotal(b.id) + (b.kind === 'lisa' ? lisaBonus(b.id) : 0), 0);
+  const series = Money.project({ start: now0, perMonth, months: 18, lump: Score.TRUST, lumpDate: Score.DATES.bday });
+  const PW = 320, PH = 120, top = Math.max(...series.map(p => p.v), 1);
+  const px = i => 8 + i / 18 * (PW - 16), py = v => PH - 18 - v / top * (PH - 30);
+  const bdayI = Math.ceil(Money.monthsUntil(Score.DATES.bday));
+  $('#projChart').innerHTML = `<svg viewBox="0 0 ${PW} ${PH}" role="img" aria-label="Projected savings over 18 months">
+    <path d="M${px(0)} ${py(0)} ${series.map(p => `L${px(p.i).toFixed(1)} ${py(p.v).toFixed(1)}`).join(' ')} L${px(18)} ${py(0)}Z" fill="rgba(208,38,63,.14)"/>
+    <path d="${series.map((p, i) => `${i ? 'L' : 'M'}${px(p.i).toFixed(1)} ${py(p.v).toFixed(1)}`).join(' ')}" fill="none" stroke="url(#gGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+    ${bdayI >= 0 && bdayI <= 18 ? `<line x1="${px(bdayI)}" x2="${px(bdayI)}" y1="8" y2="${PH - 18}" stroke="var(--alt-hi)" stroke-dasharray="3 3"/><text x="${px(bdayI) + 4}" y="16" class="g-tick">18th +£5k trust</text>` : ''}
+    <text x="8" y="${PH - 4}" class="g-tick">Now</text><text x="${PW - 8}" y="${PH - 4}" class="g-tick" text-anchor="end">${esc(dayFmt.format(series[18].d))}</text>
+    <text x="${PW - 8}" y="${Math.max(30, py(series[18].v) - 6).toFixed(1)}" class="g-tick" text-anchor="end">${esc(fmtShort(series[18].v))}</text>
+  </svg>`;
+  const v1 = Money.valueOn(now0, perMonth, Score.DATES.bday), v2 = Money.valueOn(now0, perMonth, Score.DATES.newYear, Score.TRUST, Score.DATES.bday);
+  $('#projStats').innerHTML = `<div><span>By your 18th</span><b class="tab">${fmtShort(v1)}</b></div><div><span>By 6 April + trust</span><b class="tab">${fmtShort(v2)}</b></div><div><span>LISA at 25, on the plan</span><b class="tab">${fmtShort(Money.lisaAt25())}</b></div>`;
+  $('#projNote').textContent = perMonth > 0
+    ? `${fmt(perMonth)} a month goes into saving buckets on your current split. Spending money and bills aren't counted. LISA figure assumes ~£10k in by April 2027, £4,000 a year plus bonus after, and 5% a year growth above inflation. Not guaranteed.`
+    : 'None of your buckets look like savings yet. Name one Savings, ISA, LISA or Emergency fund and it shows up here.';
 
   // the plan
   const ph = Score.phase();
@@ -1127,7 +1368,7 @@ function setTab(t) {
   $$('#tabbar button').forEach(b => b.toggleAttribute('aria-current', b.dataset.tab === t));
   $$('#tabbar button').forEach(b => { if (b.dataset.tab === t) b.setAttribute('aria-current', 'page'); });
   scrollTo({ top: 0, behavior: 'auto' });
-  if (t === 'vault') { renderVault(); openVaultDoor(); }
+  if (t === 'vault') { renderVault(); renderBills(); openVaultDoor(); }
   if (t === 'ranks') { renderRanks(); $('#ranksDot').hidden = true; }
   Sound.play('tap'); Haptics.light();
 }
@@ -1196,12 +1437,35 @@ function openSettings() {
   $('#setMotion').checked = state.settings.motion;
   $('#setCur').value = state.cur;
   $('#setPayday').value = state.nextPayday || '';
+  $('#setCalm').checked = !!state.settings.calm; $('#setWhole').checked = !!state.settings.whole;
+  $('#setRate').value = String(state.payCalc.rate); $('#setOt').value = String(state.payCalc.otMult);
+  renderBackupAge();
   $('#installHint').hidden = !(pwa.isIOS() && !pwa.isStandalone());
   const r = $('#resetBtn'); r.classList.remove('armed'); r.textContent = 'Reset everything';
   const rr = $('#resetRankBtn'); rr.classList.remove('armed'); rr.textContent = 'Reset score history';
   showSheet($('#settings'));
 }
 $('#settingsBtn').addEventListener('click', openSettings);
+$('#setCalm').addEventListener('change', e => { state.settings.calm = e.target.checked; save(); setCalm(e.target.checked); Sound.play('toggle', { on: e.target.checked }); Haptics.light(); });
+$('#setWhole').addEventListener('change', e => { state.settings.whole = e.target.checked; save(); update(); Sound.play('toggle', { on: e.target.checked }); Haptics.light(); });
+$('#setRate').addEventListener('change', e => { const v = parseNum(e.target.value); if (v > 0) { state.payCalc.rate = round2(v); save(); } e.target.value = String(state.payCalc.rate); });
+$('#setOt').addEventListener('change', e => { const v = parseNum(e.target.value); if (v >= 1) { state.payCalc.otMult = round2(v); save(); } e.target.value = String(state.payCalc.otMult); });
+function backupDays() { return state.lastBackup ? Math.floor((Date.now() - state.lastBackup) / 864e5) : null; }
+function renderBackupAge() {
+  const d = backupDays();
+  $('#backupAge').textContent = d === null ? 'Never backed up.' : d === 0 ? 'Last backup: today.' : `Last backup: ${d} day${d === 1 ? '' : 's'} ago.`;
+  $('#backupAge').classList.toggle('stale', d === null || d > 14);
+}
+async function shareFile(name, text, type, title) {
+  const blob = new Blob([text], { type });
+  try {
+    const file = new File([blob], name, { type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title }); return true; }
+  } catch (e) { if (e && e.name === 'AbortError') return false; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return true;
+}
 $('#setDone').addEventListener('click', () => closeSheet());
 $('#setSound').addEventListener('change', e => { state.settings.sound = Sound.enabled = e.target.checked; save(); Sound.play('toggle', { on: e.target.checked }); });
 $('#setHaptics').addEventListener('change', e => { state.settings.haptics = Haptics.enabled = e.target.checked; save(); Haptics.medium(); Sound.play('toggle', { on: e.target.checked }); });
@@ -1219,17 +1483,12 @@ $('#setCur').addEventListener('change', e => {
   renderNote(); renderBuckets(); renderVault(); Sound.play('toggle', { on: true });
 });
 $('#setPayday').addEventListener('change', e => { state.nextPayday = e.target.value || null; save(); renderHeader(); Sound.play('tap'); });
-$('#exportBtn').addEventListener('click', async () => {
+async function doBackup() {
   const name = `clean-cut-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  const blob = new Blob([exportJSON()], { type: 'application/json' });
-  try {
-    const file = new File([blob], name, { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Clean Cut backup' }); toast('Backup exported'); return; }
-  } catch (e) { if (e && e.name === 'AbortError') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  toast('Backup exported');
-});
+  if (!(await shareFile(name, exportJSON(), 'application/json', 'Clean Cut backup'))) return;
+  state.lastBackup = Date.now(); save(); renderBackupAge(); toast('Backup exported');
+}
+$('#exportBtn').addEventListener('click', doBackup);
 $('#importFile').addEventListener('change', async e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
   try {
@@ -1334,7 +1593,7 @@ function applySettings() {
     enableMotion(false).then(ok => { if (!ok) addEventListener('touchend', () => enableMotion(true), { once: true }); });
   }
 }
-function renderAll() { renderNote(); renderFreq(); renderBuckets(); renderHeader(); renderVault(); renderRanks(); renderPending(); }
+function renderAll() { renderNote(); renderFreq(); renderBuckets(); renderHeader(); renderVault(); renderBills(); renderRanks(); renderPending(); }
 
 /* vault door */
 let door = null, doorBusy = false;
@@ -1351,7 +1610,16 @@ function openVaultDoor() {
 
 if (banknote) document.body.insertAdjacentHTML('afterbegin', banknote.miniSprite());
 applySettings();
+if (state.settings.calm) setCalm(true);
 renderAll();
+// Nudge a backup every couple of weeks once there's something worth losing.
+setTimeout(() => {
+  const d = backupDays();
+  if (state.history.length >= 2 && (d === null || d > 14) && Date.now() - state.backupNag > 3 * 864e5) {
+    state.backupNag = Date.now(); save();
+    toast(d === null ? 'Nothing backed up yet. Your data lives only on this phone' : `Last backup ${d} days ago`, { label: 'Back up', fn: doBackup });
+  }
+}, 4000);
 // Warm the embedded fonts so the first cut doesn't wait on them.
 if (banknote) setTimeout(() => banknote.noteImage('50', { value: '£0' }).catch(() => {}), 2500);
 // After a rank reset, let the achievements you still qualify for pop again instead of unlocking silently.
