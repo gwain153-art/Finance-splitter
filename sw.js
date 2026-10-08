@@ -1,6 +1,6 @@
 /* Clean Cut service worker. All paths are relative to this file's scope,
    so it works at a domain root (Netlify) or under a sub-path (GitHub Pages). */
-const VERSION = 'cc-v10-2026-10-08';
+const VERSION = 'cc-v11b-2026-10-08';
 const PREFIX = 'cc-';
 
 const SHELL = [
@@ -77,44 +77,24 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-
-  // Page and code always come from the same version: network first for HTML, JS, CSS and the
-  // manifest, cache only when offline. Fonts, icons and images stay cache-first-ish (they don't change).
-  if (req.mode === 'navigate' || /\.(?:html|js|mjs|css|webmanifest)$/.test(url.pathname)) {
-    event.respondWith(networkFirst(event));
-  } else {
-    event.respondWith(staleWhileRevalidate(event));
-  }
+  // App shell, cache first. Every version is precached complete at install, so the page and its
+  // code always come from the same version and launch is instant, even on bad signal.
+  // A new deploy installs alongside, then the page swaps over in one go (see js/pwa.js).
+  event.respondWith(fromCache(event));
 });
 
-async function networkFirst(event) {
+async function fromCache(event) {
   const req = event.request;
   const cache = await caches.open(VERSION);
+  const key = req.mode === 'navigate' ? 'index.html' : req;
+  const hit = await cache.match(key, { ignoreSearch: true });
+  if (hit) return hit;
   try {
-    const preload = req.mode === 'navigate' && event.preloadResponse ? await event.preloadResponse : null;
-    const res = preload || await fetch(req, { cache: 'no-cache' });
-    if (res && res.ok) cache.put(req, res.clone());
+    const res = await fetch(req);
+    if (res && res.ok && res.type === 'basic') cache.put(req.mode === 'navigate' ? 'index.html' : req, res.clone());
     return res;
   } catch (_) {
-    const hit = await cache.match(req, { ignoreSearch: true });
-    if (hit || req.mode !== 'navigate') return hit || new Response('', { status: 503 });
-    return (await cache.match('index.html'))
-      || (await cache.match('./'))
-      || new Response('<h1>Offline</h1>', { status: 503, headers: { 'Content-Type': 'text/html' } });
+    if (req.mode === 'navigate') return (await cache.match('./')) || new Response('<h1>Offline</h1>', { status: 503, headers: { 'Content-Type': 'text/html' } });
+    return new Response('', { status: 503 });
   }
-}
-
-async function staleWhileRevalidate(event) {
-  const req = event.request;
-  const cache = await caches.open(VERSION);
-  const cached = await cache.match(req, { ignoreSearch: true });
-  const network = fetch(req).then((res) => {
-    if (res && res.ok && res.type === 'basic') cache.put(req, res.clone());
-    return res;
-  }).catch(() => null);
-  if (cached) {
-    event.waitUntil(network);
-    return cached;
-  }
-  return (await network) || new Response('', { status: 504 });
 }

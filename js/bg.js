@@ -5,9 +5,9 @@
 const MAX_RIPPLES = 4;
 const RIPPLE_LIFE = 1.8;          // seconds
 const CELEBRATE_TIME = 3.0;       // seconds before easing back to idle
-const MAX_SIDE = 900;             // cap on internal render resolution (longest side)
-const RES_SCALE = 0.6;            // internal pixels per CSS pixel
-const IDLE_FRAME_MS = 1000 / 30;  // ~30fps idle
+const MAX_SIDE = 620;             // cap on internal render resolution (longest side)
+const RES_SCALE = 0.42;           // internal pixels per CSS pixel
+const IDLE_FRAME_MS = 1000 / 24;  // ~30fps idle
 const ACTIVE_FRAME_MS = 1000 / 60;
 
 // Per-mood shader parameters (crossfaded).
@@ -367,7 +367,10 @@ export function createBackground(canvas, { reduceMotion = false } = {}) {
     const active = isActive(settling);
     // idle: throttle to ~30fps (small tolerance so a 60Hz display lands on every 2nd frame)
     // active: cap at ~60fps (ProMotion displays run rAF at 120Hz)
-    if (now - lastDraw >= (active ? ACTIVE_FRAME_MS : IDLE_FRAME_MS) - 4) {
+    // While the page is scrolling, hold the last frame: the smoke drifts too slowly to notice,
+    // and it frees the GPU for the scroll itself.
+    const scrolling = now - lastScroll < 160 && !active;
+    if (!scrolling && now - lastDraw >= (active ? ACTIVE_FRAME_MS : IDLE_FRAME_MS) - 4) {
       lastDraw = now;
       draw();
     }
@@ -430,6 +433,10 @@ export function createBackground(canvas, { reduceMotion = false } = {}) {
     if (reduceMotion) renderStatic(); else start();
   }
 
+  let lastScroll = 0;
+  const onScroll = () => { lastScroll = performance.now(); };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('touchmove', onScroll, { passive: true });
   canvas.addEventListener('webglcontextlost', onLost, false);
   canvas.addEventListener('webglcontextrestored', onRestored, false);
   document.addEventListener('visibilitychange', onVisibility);

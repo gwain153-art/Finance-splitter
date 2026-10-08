@@ -10,19 +10,22 @@ import * as Money from './money.js';
 /* ---------- optional modules: the app still runs if one of them fails ---------- */
 const noop = () => {};
 const soft = async (path, pick, fallback) => { try { const m = await import(path); return pick(m) || fallback; } catch (e) { console.warn('module failed', path, e); return fallback; } };
-const Sound = await soft('./audio.js', m => m.Sound, { install: noop, play: noop, startCharge: noop, setCharge: noop, stopCharge: noop, enabled: true, ready: false });
-const Haptics = await soft('./haptics.js', m => m.Haptics, { install: noop, tap: noop, light: noop, medium: noop, heavy: noop, success: noop, error: noop, tick: noop, pattern: noop, enabled: true });
-const createBackground = await soft('./bg.js', m => m.createBackground, null);
-const createFx = await soft('./fx.js', m => m.createFx, null);
-const progress = await soft('./progress.js', m => m, null);
-const Score = await soft('./score.js', m => m, null);
-const openBankRun = await soft('./bankrun.js', m => m.openBankRun, null);
-const createVaultDoor = await soft('./vaultdoor.js', m => m.createVaultDoor, null);
-const coach = await soft('./coach.js', m => m, null);
-const theme = await soft('./theme.js', m => m, null);
-const banknote = await soft('./banknote.js', m => m, null);
-const fxMod = await soft('./fx.js', m => m, null);
-const pwa = await soft('./pwa.js', m => m, { registerSW: noop, isStandalone: () => false, isIOS: () => false, requestPersistentStorage: async () => false });
+// Load every module at once instead of one after another (cuts launch time on mobile data).
+const [Sound, Haptics, createBackground, createFx, progress, Score, openBankRun, createVaultDoor, coach, theme, banknote, fxMod, pwa] = await Promise.all([
+  soft('./audio.js', m => m.Sound, { install: noop, play: noop, startCharge: noop, setCharge: noop, stopCharge: noop, enabled: true, ready: false }),
+  soft('./haptics.js', m => m.Haptics, { install: noop, tap: noop, light: noop, medium: noop, heavy: noop, success: noop, error: noop, tick: noop, pattern: noop, enabled: true }),
+  soft('./bg.js', m => m.createBackground, null),
+  soft('./fx.js', m => m.createFx, null),
+  soft('./progress.js', m => m, null),
+  soft('./score.js', m => m, null),
+  soft('./bankrun.js', m => m.openBankRun, null),
+  soft('./vaultdoor.js', m => m.createVaultDoor, null),
+  soft('./coach.js', m => m, null),
+  soft('./theme.js', m => m, null),
+  soft('./banknote.js', m => m, null),
+  soft('./fx.js', m => m, null),
+  soft('./pwa.js', m => m, { registerSW: noop, isStandalone: () => false, isIOS: () => false, requestPersistentStorage: async () => false })
+]);
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -54,6 +57,39 @@ function setCalm(on) {
     if (!bg.ok) fresh.hidden = true; else { try { applyTheme(state.settings.note || '50'); } catch (e) {} bg.setMood(baseMood()); }
   }
 }
+
+/* ---------- press feedback: everything you can tap squishes, springs back and ripples ---------- */
+const PRESSABLE = 'button,[role="button"],[role="checkbox"],.chip,label.set-row,.bills li,.h-item,.bucket,.vbar,.clock,.phase,.proj-stats div,.tile,.coach-card,.file-btn,select,.pending-strip,.factors li,.score-hero,.vault-stats>div,.bs-bal,.kp-ot,.field,.checks li';
+const NO_PRESS = '#cutTrack,.kp-grid,input[type=range],.note,.grab,.b-range';
+let pressEl = null, pressX = 0, pressY = 0, pressT = 0, pressMoved = false;
+function pressTarget(t) {
+  if (!t || !t.closest || t.closest(NO_PRESS)) return null;
+  // Typing in a field shouldn't squish the whole card around it; the field itself still presses.
+  let el = t.closest(PRESSABLE);
+  if (el && el.matches('.bucket') && t.closest('input,select,.mode,.more,.swatch')) el = t.closest('.mode button,.more,.swatch') || null;
+  return el && !el.disabled ? el : null;
+}
+function release(ripple) {
+  const el = pressEl; if (!el) return;
+  pressEl = null;
+  const left = Math.max(0, 90 - (performance.now() - pressT)); // quick taps still show the squish
+  setTimeout(() => el.classList.remove('pressing'), left);
+  if (ripple && !pressMoved && !reduce) {
+    const r = document.createElement('i'); r.className = 'tap-rip';
+    r.style.left = pressX + 'px'; r.style.top = pressY + 'px';
+    document.body.appendChild(r); setTimeout(() => r.remove(), 520);
+  }
+}
+addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  const el = pressTarget(e.target); if (!el) return;
+  pressEl = el; pressX = e.clientX; pressY = e.clientY; pressT = performance.now(); pressMoved = false;
+  el.classList.add('pressing');
+}, { capture: true, passive: true });
+addEventListener('pointermove', e => { if (pressEl && Math.hypot(e.clientX - pressX, e.clientY - pressY) > 10) { pressMoved = true; release(false); } }, { capture: true, passive: true });
+addEventListener('pointerup', () => release(true), { capture: true, passive: true });
+addEventListener('pointercancel', () => { pressMoved = true; release(false); }, { capture: true, passive: true });
+addEventListener('scroll', () => { if (pressEl) { pressMoved = true; release(false); } }, { capture: true, passive: true });
 
 /* ---------- toast ---------- */
 let toastT;
@@ -407,26 +443,29 @@ function statusLine(b, amt, pay) {
   }
   return bits.join(' <i class="dot">·</i> ');
 }
+const setText = (el, v) => { if (el && el.textContent !== v) el.textContent = v; };
+const setHTML = (el, v) => { if (el && el._h !== v) { el._h = v; el.innerHTML = v; } };
 function update() {
   const c = compute(), mult = FREQ[state.freq];
   c.rows.forEach(r => {
     const el = cardOf(r.b.id); if (!el) return;
     amtOdos.get(r.b.id)?.set(fmt(r.amt));
     const share = c.pay ? r.amt / c.pay : 0;
-    el.querySelector('.b-share').textContent = `${(share * 100).toFixed(1)}% of pay`;
-    el.querySelector('.b-year').textContent = `${fmtShort(r.amt * mult)}/yr`;
+    setText(el.querySelector('.b-share'), `${(share * 100).toFixed(1)}% of pay`);
+    setText(el.querySelector('.b-year'), `${fmtShort(r.amt * mult)}/yr`);
     const g = el.querySelector('.b-goal');
     const bonus = r.b.kind === 'lisa' ? lisaBonus(r.b.id) : 0;
     if (r.b.goal) {
       const got = bucketTotal(r.b.id) + bonus, p = clamp(got / r.b.goal, 0, 1);
-      g.innerHTML = `<span class="goal-mini"><span class="bar"><i style="width:${p * 100}%"></i></span>${Math.floor(p * 100)}%</span>`;
-    } else g.textContent = '';
+      setHTML(g, `<span class="goal-mini"><span class="bar"><i style="width:${p * 100}%"></i></span>${Math.floor(p * 100)}%</span>`);
+    } else setHTML(g, '');
     const st = el.querySelector('.b-status'), line = statusLine(r.b, r.amt, c.pay);
-    st.hidden = !line; st.innerHTML = line;
+    if (st.hidden !== !line) st.hidden = !line; setHTML(st, line);
     const rng = el.querySelector('.b-range'), max = rangeMax(r.b, c.pay);
     if (+rng.max !== max) rng.max = max;
     rng.style.setProperty('--p', clamp(r.b.value / max * 100, 0, 100) + '%');
-    el.style.setProperty('--lvl', (6 + clamp(share, 0, 1) * 94) + '%');
+    const lvl = (6 + clamp(share, 0, 1) * 94).toFixed(1) + '%';
+    if (el._lvl !== lvl) { el._lvl = lvl; el.style.setProperty('--lvl', lvl); }
     renderCash(el, r.amt);
     el.classList.toggle('zero', r.amt <= 0);
   });
@@ -1419,8 +1458,9 @@ function setTab(t) {
   $$('#tabbar button').forEach(b => b.toggleAttribute('aria-current', b.dataset.tab === t));
   $$('#tabbar button').forEach(b => { if (b.dataset.tab === t) b.setAttribute('aria-current', 'page'); });
   scrollTo({ top: 0, behavior: 'auto' });
-  if (t === 'vault') { renderVault(); renderBills(); openVaultDoor(); }
-  if (t === 'ranks') { renderRanks(); $('#ranksDot').hidden = true; }
+  // Show the tab straight away, then fill it in on the next frame so the tap feels instant.
+  if (t === 'vault') requestAnimationFrame(() => { renderVault(); renderBills(); openVaultDoor(); });
+  if (t === 'ranks') { $('#ranksDot').hidden = true; requestAnimationFrame(() => renderRanks()); }
   Sound.play('tap'); Haptics.light();
 }
 $('#tabbar').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab); });
@@ -1705,7 +1745,10 @@ function endBoot() {
 boot.addEventListener('click', endBoot);
 setTimeout(endBoot, reduce ? 0 : 1350);
 
-pwa.registerSW(apply => toast('New version ready', { label: 'Update', fn: apply }));
+// New version downloaded: if you haven't touched anything yet this launch, just switch over.
+let touchedYet = false;
+addEventListener('pointerdown', () => { touchedYet = true; }, { once: true, capture: true });
+pwa.registerSW(apply => (!touchedYet && !splitting ? apply() : toast('New version ready', { label: 'Update', fn: apply })));
 if (pwa.isStandalone()) pwa.requestPersistentStorage();
 setInterval(renderHeader, 60 * 60 * 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) renderHeader(); });

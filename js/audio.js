@@ -39,6 +39,10 @@ let keepAlive = null;
 let keepAliveUrl = null;
 let rendering = false;
 const buffers = new Map(); // key -> AudioBuffer
+// Heavy building blocks shared by every sound (AudioBuffers can be reused across contexts
+// with the same sample rate), so they're generated once per launch instead of once per sound.
+const sharedNoise = new Map(); // sampleRate -> 2s stereo white noise
+const sharedIR = new Map();    // 'rate|seconds|decay|predelay' -> reverb impulse
 const pending = new Map(); // key -> [{name, opts, at}]
 let lastTick = 0;
 const active = new Set();
@@ -191,12 +195,14 @@ function kit(c, seed = 1) {
   let noiseBuf = null;
   const getNoise = () => {
     if (noiseBuf) return noiseBuf;
+    if (sharedNoise.has(c.sampleRate)) return (noiseBuf = sharedNoise.get(c.sampleRate));
     const len = c.sampleRate * 2;
     noiseBuf = c.createBuffer(2, len, c.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
       const d = noiseBuf.getChannelData(ch);
       for (let i = 0; i < len; i++) d[i] = R() * 2 - 1;
     }
+    sharedNoise.set(c.sampleRate, noiseBuf);
     return noiseBuf;
   };
 
@@ -271,10 +277,12 @@ function kit(c, seed = 1) {
 
   // generated impulse response -> ConvolverNode (returns send input)
   const reverb = (dest, seconds = 1.8, decay = 3, wet = 0.35, predelay = 0.012) => {
+    const irKey = `${c.sampleRate}|${seconds}|${decay}|${predelay}`;
     const len = Math.floor(c.sampleRate * seconds);
-    const ir = c.createBuffer(2, len, c.sampleRate);
+    const ir = sharedIR.get(irKey) || c.createBuffer(2, len, c.sampleRate);
+    if (!sharedIR.has(irKey)) {
     const pre = Math.floor(predelay * c.sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
+    if (!sharedIR.has(irKey)) for (let ch = 0; ch < 2; ch++) {
       const d = ir.getChannelData(ch);
       let lp = 0;
       for (let i = pre; i < len; i++) {
@@ -288,6 +296,8 @@ function kit(c, seed = 1) {
         const at = pre + Math.floor((0.004 + R() * 0.05) * c.sampleRate);
         if (at < len) d[at] += (R() < 0.5 ? -1 : 1) * (0.5 - k * 0.06);
       }
+    }
+    sharedIR.set(irKey, ir);
     }
     const conv = c.createConvolver();
     conv.normalize = true;
@@ -630,8 +640,10 @@ function renderAll() {
   rendering = true;
   (async () => {
     for (const k of ORDER) {
+      while (!enabled) await new Promise((r) => setTimeout(r, 1000)); // sound off: build nothing
       try { await renderOne(k); } catch (e) { /* skip broken one */ }
-      await new Promise((r) => setTimeout(r, 0)); // yield to UI
+      // breathe between sounds so scrolling and taps never queue behind audio work
+      await new Promise((r) => setTimeout(r, 90));
     }
   })();
 }
@@ -801,7 +813,8 @@ function install() {
   window.addEventListener('pagehide', () => { stopKeepAlive(); });
   // Offline rendering needs no gesture: warm the cache while the UI settles.
   const idle = globalThis.requestIdleCallback || ((f) => setTimeout(f, 60));
-  idle(() => { try { renderAll(); } catch (e) { /* ignore */ } });
+  // Let the app finish its entrance first; the sounds you hear early (taps, keys) jump the queue anyway.
+  setTimeout(() => idle(() => { try { renderAll(); } catch (e) { /* ignore */ } }), 2200);
 }
 
 export const Sound = {

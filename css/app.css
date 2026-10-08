@@ -163,7 +163,7 @@ body.booting .app{opacity:0}
 
 /* ---------- chips ---------- */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{border:1px solid var(--line);background:var(--glass);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--muted);transition:all .25s var(--ease-out);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.chip{border:1px solid var(--line);background:rgba(29,26,35,.94);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--muted);transition:background .25s var(--ease-out),color .25s,border-color .25s,box-shadow .25s,transform .22s var(--spring)}
 .chip.sm{padding:6px 11px;font-size:12px}
 .chip:hover{color:var(--text);border-color:var(--line-2)}
 .chip[aria-pressed="true"]{background:var(--crimson);border-color:var(--crimson);color:#fff;box-shadow:0 0 22px -4px rgba(var(--a1),.8)}
@@ -818,3 +818,22 @@ html,body{max-width:100%;overflow-x:hidden}
 .b-rest{display:none;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--c);padding:6px 10px;border:1px dashed var(--c);border-radius:10px;white-space:nowrap}
 .bucket.is-rest .b-val,.bucket.is-rest .b-range{display:none}
 .bucket.is-rest .b-rest{display:none}
+
+/* ---------- v11: performance + press everything ---------- */
+/* cheaper layout: cards don't make the whole page re-lay out when they change */
+.bucket,.glass,.coach-card,.h-item{contain:layout style}
+.views,.bucket,.glass{-webkit-tap-highlight-color:transparent}
+button,a,label,select,input,[role="button"],[role="checkbox"]{-webkit-tap-highlight-color:transparent}
+
+/* press: every tappable thing squishes and springs back */
+:where(button,[role="button"],[role="checkbox"],.chip,.set-row,.bills li,.h-item,.bucket,.vbar,.clock,.phase,.proj-stats div,.tile,.coach-card,.file-btn,select,.pending-strip,.rank-pill,.payday-pill,.icon-btn,.add,.factors li,.score-hero,.vault-stats>div,.bs-bal,.kp-ot,.field){
+  transition:transform .26s cubic-bezier(.34,1.56,.64,1),filter .2s ease,background-color .2s,border-color .2s,box-shadow .25s,color .2s,opacity .2s}
+.pressing{transform:scale(var(--press,.94))!important;filter:brightness(1.12)}
+:where(.bucket,.glass,.h-item,.bills li,.checks li,.set-row,.coach-card,.factors li,.score-hero,.vault-hero,.alloc,.pending-strip,.bs-bal,.field,.kp-ot).pressing{--press:.975}
+:where(.chip,.ghost,.btn-primary,.tabbar button,.mode button,.swatch,.more,.x,.tickbox,.tick,.icon-btn,.bs-icons button,.swatches button,.note-pick button,.h-del).pressing{--press:.9}
+.tabbar button.pressing svg{transform:scale(.82) rotate(-6deg)}
+/* tap ripple at your finger */
+.tap-rip{position:fixed;z-index:300;left:0;top:0;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.55),rgba(var(--a2),.35) 45%,rgba(var(--a2),0) 70%);animation:tapRip .5s cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes tapRip{from{transform:scale(1);opacity:.9}to{transform:scale(9);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pressing{transform:none!important}.tap-rip{display:none}}
