@@ -1,5 +1,5 @@
 import {
-  state, save, compute, fmt, fmtShort, mkFormat, parseNum, esc, uid, round2, clamp,
+  state, save, compute, fmt, fmt0, fmtShort, mkFormat, parseNum, esc, uid, round2, clamp,
   SHADES, FREQ, bucketTotal, nextPayday, exportJSON, replaceState, resetState,
   pending, pendingLeft, setPartDone, nextSerialN, resetProgress, justReset
 } from './state.js';
@@ -12,6 +12,7 @@ const Haptics = await soft('./haptics.js', m => m.Haptics, { install: noop, tap:
 const createBackground = await soft('./bg.js', m => m.createBackground, null);
 const createFx = await soft('./fx.js', m => m.createFx, null);
 const progress = await soft('./progress.js', m => m, null);
+const Score = await soft('./score.js', m => m, null);
 const openBankRun = await soft('./bankrun.js', m => m.openBankRun, null);
 const createVaultDoor = await soft('./vaultdoor.js', m => m.createVaultDoor, null);
 const coach = await soft('./coach.js', m => m, null);
@@ -680,7 +681,7 @@ async function runSplit() {
   const live = c.rows.filter(r => r.amt > 0);
   if (!live.length || c.over || c.pay <= 0) return;
   splitting = true;
-  const before = progress ? progress.evaluate(state) : null;
+  const sBefore = Score ? scoreNow().score : null;
 
   // build the stage
   const tiles = $('#stageTiles');
@@ -727,12 +728,12 @@ async function runSplit() {
   state.history.unshift(entry);
   state.history = state.history.slice(0, 500);
   touch();
-  const after = progress ? progress.evaluate(state) : null;
+  const sAfter = Score ? scoreNow().score : null;
 
   Sound.play('fanfare'); Haptics.success(); bg.setMood('celebrate');
   if (!reduce) { fx.confetti(innerWidth / 2, innerHeight * .42, { count: 200 }); fx.shockwave(innerWidth / 2, innerHeight * .42, { radius: Math.max(innerWidth, innerHeight) * .7 }); }
   $('#stampSub').textContent = `${fmt(c.pay)} into ${live.length} bucket${live.length === 1 ? '' : 's'}`;
-  $('#stampXp').textContent = before && after ? `+${Math.round(after.xp - before.xp)} XP` : '';
+  $('#stampXp').textContent = sBefore != null && sAfter !== sBefore ? `Score ${sAfter > sBefore ? '+' : ''}${sAfter - sBefore}` : '';
   $('#stampLine').textContent = coach ? coach.line('cut') : '';
   const toMove = parts.filter(p => !p.auto);
   $('#stampDone').textContent = allAuto ? 'Nice' : 'Bank it';
@@ -829,21 +830,21 @@ const ICONS = {
 const icon = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n] || ICONS.star}</svg>`;
 
 let lastLevel = progress ? progress.evaluate(state).level : 1;
+const scoreNow = () => (Score ? Score.score(state, fmt0) : null);
+let lastScore = Score ? scoreNow().score : 0;
+// Money score: banner when it climbs, the big overlay when you move up a band.
 function processProgress({ quiet = false } = {}) {
-  if (!progress) return;
-  const fresh = progress.newlyUnlocked(state) || [];
-  fresh.forEach(a => { state.unlocked[a.id] = Date.now(); });
-  if (fresh.length) save();
-  const ev = progress.evaluate(state);
-  const leveled = ev.level > lastLevel ? { from: progress.LEVELS.find(l => l.level === lastLevel)?.name || '', to: ev.levelName } : null;
-  lastLevel = ev.level;
+  if (!Score) return;
+  const sc = scoreNow();
+  const before = lastScore, prevBand = Score.bandFor(before);
+  lastScore = sc.score;
+  if (Score.logScore(state, sc.score).changed) save();
   renderHeader();
-  if (quiet) return;
-  if (fresh.length) $('#ranksDot').hidden = false;
-  // More than three at once gets rolled up so you're not sat through 30 seconds of banners.
-  const show = fresh.length > 3 ? [...fresh.slice(0, 2), { icon: 'star', name: `+${fresh.length - 2} more`, desc: fresh.slice(2).map(a => a.name).join(', ') }] : fresh;
-  if (leveled) showRankUp(leveled).then(() => show.forEach(queueBanner));
-  else show.forEach(queueBanner);
+  if (tab === 'ranks') renderRanks();
+  if (quiet || sc.score === before) return;
+  if (sc.score > before && tab !== 'ranks') $('#ranksDot').hidden = false;
+  if (sc.band.index > prevBand.index) showRankUp({ from: prevBand.name, to: sc.band.name });
+  else if (sc.score > before) queueBanner({ icon: 'bolt', eyebrow: 'Money score', name: `+${sc.score - before} points`, desc: `Now ${sc.score}. ${sc.band.name}.` });
 }
 let progT;
 function queueProgress() { clearTimeout(progT); progT = setTimeout(() => { if (!splitting) processProgress(); }, 700); }
@@ -854,7 +855,7 @@ async function nextBanner() {
   const a = bannerQ.shift(); if (!a) { bannerBusy = false; return; }
   bannerBusy = true;
   const el = document.createElement('div'); el.className = 'banner';
-  el.innerHTML = `<span class="ic">${icon(a.icon)}</span><span><span class="eyebrow">Achievement unlocked</span><b>${esc(a.name)}</b><small>${esc(a.desc)}</small></span>`;
+  el.innerHTML = `<span class="ic">${icon(a.icon)}</span><span><span class="eyebrow">${esc(a.eyebrow || 'Score up')}</span><b>${esc(a.name)}</b><small>${esc(a.desc)}</small></span>`;
   el.onclick = () => { setTab('ranks'); el.classList.add('out'); };
   $('#banners').appendChild(el);
   Sound.play('achievement'); Haptics.success();
@@ -879,10 +880,10 @@ function showRankUp({ from, to }) {
    HEADER
    ========================================================= */
 function renderHeader() {
-  if (progress) {
-    const ev = progress.evaluate(state);
-    $('#rankLvl').textContent = ev.level; $('#rankName').textContent = ev.levelName;
-    $('#rankRing').style.strokeDashoffset = 94.25 * (1 - ev.progress);
+  if (Score) {
+    const sc = scoreNow();
+    $('#rankLvl').textContent = sc.score; $('#rankName').textContent = sc.band.name;
+    $('#rankRing').style.strokeDashoffset = 94.25 * (1 - sc.score / Score.MAX);
   } else $('#rankPill').hidden = true;
   const pd = nextPayday(), pill = $('#paydayPill');
   pill.classList.remove('soon', 'today');
@@ -1013,22 +1014,106 @@ $('#clearBtn').addEventListener('click', e => {
 /* =========================================================
    RANKS
    ========================================================= */
-function renderRanks() {
-  if (!progress) return;
-  const ev = progress.evaluate(state);
-  $('#rbLvl').textContent = ev.level; $('#rankTitle').textContent = ev.levelName;
-  requestAnimationFrame(() => requestAnimationFrame(() => { $('#xpFill').style.width = (ev.progress * 100) + '%'; }));
-  $('#xpNow').textContent = `${Math.round(ev.xp).toLocaleString('en-GB')} XP`;
-  $('#xpNext').textContent = ev.nextXp != null ? `${Math.round(ev.nextXp - ev.xp).toLocaleString('en-GB')} to ${ev.nextName}` : 'Max rank. Absolute unit.';
-  const got = ev.achievements.filter(a => a.unlocked).length;
-  $('#achCount').textContent = `${got} / ${ev.achievements.length}`;
-  const sorted = [...ev.achievements].sort((a, b) => (b.unlocked - a.unlocked) || ((b.progress || 0) - (a.progress || 0)));
-  $('#achGrid').innerHTML = sorted.map(a => {
-    const secret = a.hidden && !a.unlocked;
-    return `<div class="ach${a.unlocked ? ' on' : ''}"><span class="ic">${icon(secret ? 'skull' : a.icon)}</span><b>${esc(secret ? '???' : a.name)}</b><small>${esc(secret ? 'Hidden. Keep splitting.' : a.desc)}</small>${!a.unlocked && !secret ? `<div class="bar"><i style="width:${Math.round((a.progress || 0) * 100)}%"></i></div>` : ''}</div>`;
+function gaugeSVG(score) {
+  const cx = 160, cy = 160, r = 130, A = v => Math.PI + (v / 999) * Math.PI;
+  const pt = a => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  const arc = (a0, a1) => { const p0 = pt(a0), p1 = pt(a1); return `M${p0[0].toFixed(1)} ${p0[1].toFixed(1)} A${r} ${r} 0 0 1 ${p1[0].toFixed(1)} ${p1[1].toFixed(1)}`; };
+  const len = Math.PI * r;
+  const segs = Score.BANDS.map((b, i) => {
+    const to = (Score.BANDS[i + 1] ? Score.BANDS[i + 1].min : 1000) - 1;
+    const col = i >= 3 ? 'var(--alt-hi)' : i === 2 ? 'var(--acc-soft)' : 'var(--crimson)';
+    return `<path class="g-seg" d="${arc(A(b.min) + (i ? .02 : 0), A(to))}" stroke="${col}" opacity=".16"/>`;
   }).join('');
-  $('#ladder').innerHTML = progress.LEVELS.map(l => `<li class="${l.level < ev.level ? 'done' : l.level === ev.level ? 'cur' : ''}"><span>${l.level}</span>${esc(l.name)}<small>${l.xp.toLocaleString('en-GB')} XP</small></li>`).join('');
+  const deg = (score / 999) * 180 - 90;
+  return `<svg viewBox="0 0 320 178" aria-hidden="true">
+    <defs><linearGradient id="gGrad" x1="0" x2="1"><stop offset="0" stop-color="var(--crimson-deep)"/><stop offset=".55" stop-color="var(--crimson)"/><stop offset="1" stop-color="var(--alt-hi)"/></linearGradient></defs>
+    <path class="g-track" d="${arc(Math.PI, 2 * Math.PI)}"/>${segs}
+    <path class="g-fill" d="${arc(Math.PI, 2 * Math.PI)}" stroke-dasharray="${len.toFixed(1)}" stroke-dashoffset="${len.toFixed(1)}" data-off="${(len * (1 - score / 999)).toFixed(1)}"/>
+    <g class="g-needle" style="transform:rotate(-90deg)" data-rot="${deg.toFixed(1)}"><line x1="160" y1="160" x2="160" y2="52" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="160" cy="160" r="7" fill="#fff"/></g>
+    <text class="g-tick" x="18" y="176">0</text><text class="g-tick" x="284" y="176">999</text>
+  </svg>`;
 }
+const tickSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
+const longDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+function renderRanks() {
+  if (!Score) return;
+  const sc = scoreNow();
+  const g = $('#scoreGauge');
+  g.innerHTML = gaugeSVG(sc.score);
+  g.setAttribute('aria-label', `Money score ${sc.score} out of 999, ${sc.band.name}`);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const f = g.querySelector('.g-fill'), nd = g.querySelector('.g-needle');
+    if (f) f.style.strokeDashoffset = f.dataset.off;
+    if (nd) nd.style.transform = `rotate(${nd.dataset.rot}deg)`;
+  }));
+  $('#scoreNum').textContent = sc.score;
+  const bandEl = $('#scoreBand'); bandEl.textContent = sc.band.name; bandEl.className = 'score-band b' + sc.band.index;
+  $('#scoreBlurb').textContent = sc.band.next ? `${sc.band.blurb} ${sc.band.next.min - sc.score} to ${sc.band.next.name}.` : sc.band.blurb;
+  const log = Array.isArray(state.scoreLog) ? state.scoreLog : [];
+  const ref = [...log].reverse().find(e => Date.now() - e.t >= 7 * 864e5) || log[0];
+  const d = ref ? sc.score - ref.s : 0, de = $('#scoreDelta');
+  de.className = 'score-delta tab' + (d > 0 ? ' up' : d < 0 ? ' down' : '');
+  de.textContent = ref && d !== 0 ? `${d > 0 ? '+' : ''}${d} since ${dayFmt.format(new Date(ref.t))}` : '';
+
+  const pts = sc.factors.reduce((s2, x) => s2 + Math.round(x.max * Math.max(0, Math.min(1, x.v))), 0);
+  $('#factorMeta').textContent = `${pts} / 999`;
+  $('#factors').innerHTML = sc.factors.map(x => {
+    const p = Math.round(x.max * Math.max(0, Math.min(1, x.v)));
+    return `<li class="${p >= x.max ? 'full' : ''}"><div class="f-top"><b>${esc(x.name)}</b><span class="f-pts"><em>${p}</em> / ${x.max}</span></div><div class="bar"><i style="width:${(p / x.max * 100).toFixed(0)}%"></i></div><small>${esc(x.now)} <span>&middot; ${esc(x.tip)}</span></small></li>`;
+  }).join('');
+
+  // the plan
+  const ph = Score.phase();
+  const names = [['Phase 1', 'Now to 14 Mar: emergency fund, then second-year LISA money'], ['Phase 2', '15 Mar to 5 Apr: trust money lands, £4,000 into the LISA'], ['Phase 3', 'From 6 Apr: second £4,000 in, then the ISA']];
+  $('#phaseMeta').textContent = `Phase ${ph} of 3`;
+  $('#phases').innerHTML = names.map((nm, i) => `<div class="phase ${i + 1 === ph ? 'cur' : i + 1 < ph ? 'done' : ''}"><b>${nm[0]}</b>${esc(nm[1])}</div>`).join('');
+  const em = sc.factors.find(x => x.id === 'emergency');
+  let msg;
+  if (ph === 1) msg = (em && em.v < 1 ? `Fill the emergency fund first (${em.now}). Then everything spare goes towards the second £4,000 for the LISA. ` : 'Emergency fund done. Everything spare goes towards the second £4,000 for the LISA. ')
+    + `The £${Score.TRUST.toLocaleString('en-GB')} trust money at 18 covers the first £4,000. Ask the trustees now how long the payout takes.`;
+  else if (ph === 2) msg = `Open the Dodl LISA and pay £4,000 of the trust money in before 5 April. ${Math.max(0, Score.daysUntil(Score.DATES.taxEnd))} days left for this tax year's £1,000 bonus. Don't spend the other £1,000: it's part of the 6 April payment.`;
+  else msg = (Score.daysUntil('2027-04-30') >= 0 ? 'Pay the second £4,000 into the LISA (the £1,000 left from the trust plus your savings). ' : '') + 'With this year\'s LISA allowance used, spare money goes to the ISA. Pay rise due around September 2027: update your pay when it lands.';
+  $('#nextUp').textContent = msg;
+  const clocks = [[Score.DATES.bday, 'to your 18th', 'LISA can open'], [Score.DATES.taxEnd, 'to tax-year end', '£4k in by then'], [Score.DATES.payRise, 'to the pay rise', '~£10.85/hr']];
+  $('#clocks').innerHTML = clocks.map(c => `<div class="clock"><b class="tab">${Math.max(0, Score.daysUntil(c[0]))}</b><span>days ${c[1]}</span><small>${esc(c[2])}<br>${longDate.format(new Date(c[0] + 'T12:00'))}</small></div>`).join('');
+
+  // to-dos
+  const checks = state.plan.checks || {};
+  const done = Score.CHECKS.filter(c => checks[c.id]).length;
+  $('#checksMeta').textContent = `${done} / ${Score.CHECKS.length}`;
+  $('#checks').innerHTML = Score.CHECKS.map(c => `<li class="${checks[c.id] ? 'on' : ''}" data-check="${c.id}" role="checkbox" aria-checked="${!!checks[c.id]}" tabindex="0"><span class="tick">${tickSVG}</span><span class="c-txt">${esc(c.name)}<small>${esc(c.hint)}</small></span></li>`).join('');
+
+  // pension
+  const pen = Score.pension(state.plan.gross);
+  $('#penOn').checked = !!state.plan.penOn;
+  if (document.activeElement !== $('#penGross')) $('#penGross').value = state.plan.gross ? String(state.plan.gross) : '';
+  $('#penRows').innerHTML = `<div><span>You pay (after tax relief)</span><b>${fmt(pen.you)}</b></div><div><span>Tax relief adds</span><b class="plus">+${fmt(pen.relief)}</b></div><div><span>Employer must add</span><b class="plus">+${fmt(pen.employer)}</b></div><div class="tot"><span>Going in a month</span><b>${fmt(pen.total)}</b></div>`;
+  $('#penNote').textContent = state.plan.penOn
+    ? `Comes out before your take-home, so the pay you split should already be about ${fmt(pen.you)} lower. Free money in: ${fmt(pen.relief + pen.employer)} a month.`
+    : `Not opted in yet. That's ${fmt((pen.relief + pen.employer) * 12)} a year of free money left on the table.`;
+
+  // bands
+  $('#ladder').innerHTML = [...Score.BANDS].reverse().map(b => {
+    const top = Score.BANDS[Score.BANDS.indexOf(b) + 1];
+    const range = `${b.min}-${top ? top.min - 1 : 999}`;
+    return `<li class="${b.name === sc.band.name ? 'cur' : sc.score > b.min ? 'done' : ''}"><span>${b.name === sc.band.name ? '&#9654;' : ''}</span>${esc(b.name)}<small>${range}</small></li>`;
+  }).join('');
+}
+function planChanged() { save(); renderRanks(); processProgress(); }
+$('#checks').addEventListener('click', e => {
+  const li = e.target.closest('[data-check]'); if (!li) return;
+  const id = li.dataset.check, on = !state.plan.checks[id];
+  state.plan.checks[id] = on;
+  if (id === 'pension') state.plan.penOn = on;
+  Sound.play(on ? 'coin' : 'tap'); on ? Haptics.success() : Haptics.light();
+  planChanged();
+});
+$('#checks').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('[data-check]')) { e.preventDefault(); e.target.click(); } });
+$('#penOn').addEventListener('change', e => {
+  state.plan.penOn = e.target.checked; state.plan.checks.pension = e.target.checked;
+  Sound.play('tap'); Haptics.light(); planChanged();
+});
+$('#penGross').addEventListener('change', e => { state.plan.gross = Math.max(0, parseNum(e.target.value)); planChanged(); });
 
 /* =========================================================
    TABS
@@ -1113,7 +1198,7 @@ function openSettings() {
   $('#setPayday').value = state.nextPayday || '';
   $('#installHint').hidden = !(pwa.isIOS() && !pwa.isStandalone());
   const r = $('#resetBtn'); r.classList.remove('armed'); r.textContent = 'Reset everything';
-  const rr = $('#resetRankBtn'); rr.classList.remove('armed'); rr.textContent = 'Reset rank';
+  const rr = $('#resetRankBtn'); rr.classList.remove('armed'); rr.textContent = 'Reset score history';
   showSheet($('#settings'));
 }
 $('#settingsBtn').addEventListener('click', openSettings);
@@ -1160,15 +1245,14 @@ let rankArm;
 $('#resetRankBtn').addEventListener('click', e => {
   const b = e.currentTarget;
   if (!b.classList.contains('armed')) {
-    b.classList.add('armed'); b.textContent = 'Tap again. Back to Skint.'; Sound.play('error'); Haptics.medium();
-    clearTimeout(rankArm); rankArm = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Reset rank'; }, 3500);
+    b.classList.add('armed'); b.textContent = 'Tap again to clear it'; Sound.play('error'); Haptics.medium();
+    clearTimeout(rankArm); rankArm = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Reset score history'; }, 3500);
     return;
   }
-  clearTimeout(rankArm); b.classList.remove('armed'); b.textContent = 'Reset rank';
-  resetProgress(); lastLevel = 1;
+  clearTimeout(rankArm); b.classList.remove('armed'); b.textContent = 'Reset score history';
+  state.scoreLog = []; save(); lastScore = Score ? scoreNow().score : 0;
   renderHeader(); renderRanks(); renderVault();
-  Sound.play('delete'); Haptics.heavy(); toast('Rank and achievements reset. History kept.');
-  setTimeout(() => processProgress(), 900);
+  Sound.play('delete'); Haptics.heavy(); toast('Score history cleared. Splits kept.');
 });
 let resetArm;
 $('#resetBtn').addEventListener('click', e => {

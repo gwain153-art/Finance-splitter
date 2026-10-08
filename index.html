@@ -53,10 +53,10 @@
       <svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><defs><radialGradient id="svh" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#D9D5DF"/><stop offset="1" stop-color="#7E7788"/></radialGradient><clipPath id="cah"><polygon points="-10,-10 58,-10 -10,58"/></clipPath><clipPath id="cbh"><polygon points="58,-10 58,58 -10,58"/></clipPath></defs><g class="half-a"><g clip-path="url(#cah)"><g transform="rotate(-35.95 24 24)"><circle class="arc" style="--i:0" cx="24" cy="24" r="19" fill="none" stroke="#8E4FD0" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="53.69 65.69" stroke-dashoffset="0.00"/><circle class="arc" style="--i:1" cx="24" cy="24" r="19" fill="none" stroke="#D0263F" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="53.69 65.69" stroke-dashoffset="-59.69"/></g><circle class="core" cx="24" cy="24" r="10.5" fill="url(#svh)"/></g></g><g class="half-b"><g clip-path="url(#cbh)"><g transform="rotate(-35.95 24 24)"><circle class="arc" style="--i:0" cx="24" cy="24" r="19" fill="none" stroke="#8E4FD0" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="53.69 65.69" stroke-dashoffset="0.00"/><circle class="arc" style="--i:1" cx="24" cy="24" r="19" fill="none" stroke="#D0263F" stroke-width="4.4" stroke-linecap="round" stroke-dasharray="53.69 65.69" stroke-dashoffset="-59.69"/></g><circle class="core" cx="24" cy="24" r="10.5" fill="url(#svh)"/></g></g><path class="blade" d="M3 45 L45 3" stroke="#fff" stroke-width=".9" stroke-linecap="round"/></svg>
       <span class="hdr-word">Clean<b>Cut</b></span>
     </div>
-    <button class="rank-pill" id="rankPill" aria-label="Your rank">
+    <button class="rank-pill score" id="rankPill" aria-label="Your money score">
       <svg viewBox="0 0 36 36" class="rank-ring"><circle cx="18" cy="18" r="15" class="rr-track"/><circle cx="18" cy="18" r="15" class="rr-fill" id="rankRing"/></svg>
-      <span class="rank-lvl tab" id="rankLvl">1</span>
-      <span class="rank-name" id="rankName">Skint</span>
+      <span class="rank-lvl tab" id="rankLvl">0</span>
+      <span class="rank-name" id="rankName">Score</span>
     </button>
     <button class="payday-pill" id="paydayPill"><span id="paydayTxt">Set payday</span></button>
     <button class="icon-btn" id="settingsBtn" aria-label="Settings">
@@ -165,23 +165,45 @@
       </div>
     </section>
 
-    <!-- ================= RANKS ================= -->
+    <!-- ================= SCORE ================= -->
     <section class="view" id="view-ranks" data-view="ranks" hidden>
-      <div class="rank-hero glass">
-        <div class="rank-badge" id="rankBadge"><span class="tab" id="rbLvl">1</span></div>
-        <span class="eyebrow">Current rank</span>
-        <h2 class="rank-title" id="rankTitle">Skint</h2>
-        <div class="xpbar"><i id="xpFill"></i></div>
-        <div class="xp-meta tab"><span id="xpNow"></span><span id="xpNext"></span></div>
+      <div class="score-hero glass">
+        <span class="eyebrow">Money score</span>
+        <div class="gauge" id="scoreGauge" role="img" aria-label="Money score"></div>
+        <div class="score-read">
+          <span class="score-num tab" id="scoreNum">0</span>
+          <span class="score-of">out of 999</span>
+        </div>
+        <span class="score-band" id="scoreBand"></span>
+        <p class="score-blurb" id="scoreBlurb"></p>
+        <span class="score-delta tab" id="scoreDelta"></span>
       </div>
       <div class="glass pad">
-        <div class="sec-head"><h3>Achievements</h3><span class="eyebrow" id="achCount"></span></div>
-        <div class="ach-grid" id="achGrid"></div>
+        <div class="sec-head"><h3>What makes it</h3><span class="eyebrow" id="factorMeta"></span></div>
+        <ol class="factors" id="factors"></ol>
       </div>
       <div class="glass pad">
-        <div class="sec-head"><h3>The ladder</h3></div>
+        <div class="sec-head"><h3>The plan</h3><span class="eyebrow" id="phaseMeta"></span></div>
+        <div class="phases" id="phases"></div>
+        <p class="next-up" id="nextUp"></p>
+        <div class="clocks" id="clocks"></div>
+      </div>
+      <div class="glass pad">
+        <div class="sec-head"><h3>To do</h3><span class="eyebrow" id="checksMeta"></span></div>
+        <ul class="checks" id="checks"></ul>
+      </div>
+      <div class="glass pad">
+        <div class="sec-head"><h3>Workplace pension</h3><span class="eyebrow">Under-22 opt-in</span></div>
+        <label class="set-row"><span><b>I've opted in</b><small>Your employer has to pay in once you ask</small></span><input type="checkbox" class="tgl" id="penOn"></label>
+        <label class="field pen-field"><span>Gross a year £</span><input id="penGross" type="text" inputmode="decimal" aria-label="Gross pay a year"></label>
+        <div class="pen-rows tab" id="penRows"></div>
+        <p class="hint" id="penNote"></p>
+      </div>
+      <div class="glass pad">
+        <div class="sec-head"><h3>The bands</h3></div>
         <ol class="ladder" id="ladder"></ol>
       </div>
+      <p class="coach-fine score-fine">Your own health check, built like a credit score. Not a real one: lenders never see it.</p>
     </section>
   </main>
 
@@ -200,7 +222,7 @@
   <nav class="tabbar" id="tabbar" aria-label="Sections">
     <button data-tab="split" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M4 20 20 4"/></svg><span>Split</span></button>
     <button data-tab="vault"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 8v1M12 15v1M8 12h1M15 12h1"/></svg><span>Vault</span><i class="tab-dot" id="vaultDot" hidden></i></button>
-    <button data-tab="ranks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg><span>Ranks</span><i class="tab-dot" id="ranksDot" hidden></i></button>
+    <button data-tab="ranks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg><span>Score</span><i class="tab-dot" id="ranksDot" hidden></i></button>
   </nav>
 </div>
 
@@ -259,7 +281,7 @@
     <div class="set-btns">
       <button class="ghost" id="exportBtn">Export backup</button>
       <label class="ghost file-btn">Import backup<input type="file" id="importFile" accept="application/json,.json"></label>
-      <button class="ghost" id="resetRankBtn">Reset rank</button>
+      <button class="ghost" id="resetRankBtn">Reset score history</button>
       <button class="ghost danger" id="resetBtn">Reset everything</button>
     </div>
   </div>
@@ -286,7 +308,7 @@
 </div>
 
 <div class="rankup" id="rankup" hidden>
-  <span class="eyebrow">Rank up</span>
+  <span class="eyebrow" id="ruEyebrow">Score up</span>
   <div class="ru-from" id="ruFrom"></div>
   <div class="ru-arrow">↓</div>
   <h2 id="ruTo"></h2>

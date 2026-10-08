@@ -499,6 +499,73 @@ body.sheet-open{overflow:hidden}
 .ladder li.done span{color:var(--crimson)}
 .ladder li.cur{color:#fff;background:linear-gradient(90deg,rgba(var(--a1),.35),transparent);border:1px solid rgba(var(--a2),.4)}
 .ladder li.cur span{color:var(--crimson-hi);text-shadow:0 0 10px var(--crimson)}
+.ladder li small{max-width:52%;text-align:right;line-height:1.25}
+
+/* ---------- money score ---------- */
+.rank-pill.score .rank-lvl{font-size:11px;letter-spacing:-.02em}
+.score-hero{padding:22px 18px 20px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;position:relative;overflow:hidden}
+.score-hero::before{content:"";position:absolute;inset:-40% -20% auto;height:80%;background:radial-gradient(closest-side,rgba(var(--a1),.28),transparent);pointer-events:none}
+.gauge{position:relative;width:min(320px,86vw);margin-top:6px}
+.gauge svg{display:block;width:100%;height:auto;overflow:visible}
+.gauge .g-track{fill:none;stroke:rgba(255,255,255,.06);stroke-width:20;stroke-linecap:round}
+.gauge .g-seg{fill:none;stroke-width:20;transition:opacity .6s}
+.gauge .g-fill{fill:none;stroke:url(#gGrad);stroke-width:20;stroke-linecap:round;filter:drop-shadow(0 0 10px rgba(var(--a1),.8));transition:stroke-dashoffset 1.4s var(--ease-out)}
+.gauge .g-tick{fill:var(--dim);font-family:var(--mono);font-size:10px}
+.gauge .g-needle{transition:transform 1.4s var(--spring);transform-origin:160px 160px}
+.score-read{display:flex;flex-direction:column;align-items:center;margin-top:2px;position:relative}
+.score-num{font-family:var(--display);font-weight:900;font-size:76px;line-height:.85;letter-spacing:.01em;text-shadow:0 0 34px rgba(var(--a2),.55)}
+.score-of{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.score-band{margin-top:10px;font-family:var(--display);font-weight:900;font-size:20px;text-transform:uppercase;letter-spacing:.06em;padding:5px 16px;border-radius:99px;border:1px solid rgba(var(--a2),.5);background:linear-gradient(135deg,rgba(var(--a3),.9),rgba(0,0,0,.3));box-shadow:0 0 24px -6px var(--crimson)}
+.score-band.b3,.score-band.b4{border-color:rgba(var(--b1),.6);background:linear-gradient(135deg,rgba(var(--b1),.45),rgba(0,0,0,.3));box-shadow:0 0 24px -6px var(--alt)}
+.score-blurb{margin:8px 0 0;font-size:13px;color:var(--muted);max-width:34ch}
+.score-delta{font-family:var(--mono);font-size:11px;color:var(--dim);min-height:1em}
+.score-delta.up{color:var(--alt-hi)}
+.score-delta.down{color:var(--crimson-hi)}
+.factors{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column}
+.factors li{padding:11px 0;border-top:1px solid var(--line)}
+.factors li:first-child{border-top:0}
+.factors .f-top{display:flex;align-items:baseline;gap:10px}
+.factors b{flex:1;font-size:14px}
+.factors .f-pts{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.factors .f-pts em{font-style:normal;color:var(--text);font-weight:700}
+.factors .bar{height:6px;margin-top:7px}
+.factors li.full .bar i{background:linear-gradient(90deg,var(--alt),var(--alt-hi));box-shadow:0 0 12px rgba(var(--b1),.7)}
+.factors small{display:block;margin-top:6px;font-size:12px;color:var(--muted);line-height:1.35}
+.factors small span{color:var(--dim)}
+.phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
+.phase{padding:10px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.25);font-size:11.5px;color:var(--dim);line-height:1.3}
+.phase b{display:block;font-family:var(--display);font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:2px}
+.phase.cur{border-color:rgba(var(--a2),.5);background:linear-gradient(160deg,rgba(var(--a3),.7),rgba(0,0,0,.25));color:var(--text)}
+.phase.cur b{color:var(--crimson-hi);text-shadow:0 0 12px rgba(var(--a1),.7)}
+.phase.done{opacity:.55}
+.next-up{margin:12px 0 0;padding:12px 14px;border-radius:14px;border-left:3px solid var(--crimson-hi);background:rgba(0,0,0,.3);font-size:13.5px;line-height:1.45}
+.clocks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
+.clock{padding:10px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.25);text-align:center}
+.clock b{display:block;font-family:var(--display);font-weight:900;font-size:34px;line-height:1}
+.clock span{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.clock small{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.checks{list-style:none;margin:8px 0 0;padding:0}
+.checks li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.checks li:first-child{border-top:0}
+.checks .tick{flex:none;width:24px;height:24px;border-radius:8px;border:1.5px solid var(--line-2);display:grid;place-items:center;color:transparent;transition:background .2s,border-color .2s,transform .25s var(--spring)}
+.checks .tick svg{width:15px;height:15px}
+.checks li.on .tick{background:var(--crimson);border-color:var(--crimson);color:#fff;box-shadow:0 0 14px rgba(var(--a1),.7)}
+.checks li:active .tick{transform:scale(.88)}
+.checks .c-txt{flex:1;font-size:14px;line-height:1.3}
+.checks .c-txt small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.checks li.on .c-txt{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--crimson)}
+.pen-field{margin-top:10px;height:46px}
+.pen-field span{font-size:12px;color:var(--muted)}
+.pen-rows{margin-top:10px;display:flex;flex-direction:column}
+.pen-rows div{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
+.pen-rows div:first-child{border-top:0}
+.pen-rows span{color:var(--muted)}
+.pen-rows .plus{color:var(--alt-hi)}
+.pen-rows .tot{font-weight:700}
+#view-ranks .set-row{margin:10px -18px 0;padding:12px 18px;border-top:1px solid var(--line)}
+#view-ranks .hint{margin-top:8px}
+.score-fine{text-align:center}
+@media (max-width:380px){.clock b{font-size:28px}.phase{font-size:10.5px}}
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion:reduce){

@@ -29,6 +29,8 @@ export function defaults() {
     settings: { sound: true, haptics: true, motion: false, note: '50' },
     unlocked: {},
     progressFrom: 0,
+    plan: { checks: {}, penOn: false, gross: 17680 },
+    scoreLog: [],
     resets: 1,
     history: [],
     buckets: [
@@ -52,6 +54,9 @@ function normalise(s) {
   delete out.sound;
   out.unlocked = s.unlocked && typeof s.unlocked === 'object' ? s.unlocked : {};
   out.progressFrom = +s.progressFrom || 0;
+  const pl = s.plan && typeof s.plan === 'object' ? s.plan : {};
+  out.plan = { checks: pl.checks && typeof pl.checks === 'object' ? pl.checks : {}, penOn: !!pl.penOn, gross: +pl.gross > 0 ? +pl.gross : 17680 };
+  out.scoreLog = (Array.isArray(s.scoreLog) ? s.scoreLog : []).filter(e => e && +e.t > 0 && Number.isFinite(+e.s)).map(e => ({ t: +e.t, s: +e.s })).slice(-90);
   // One-off: v3 restarts everyone's rank and achievements (history is kept).
   if (!(+s.resets >= 1)) { out.unlocked = {}; out.progressFrom = Date.now(); out.resets = 1; justReset = true; }
   out.buckets = (Array.isArray(s.buckets) ? s.buckets : d.buckets).map(b => ({
